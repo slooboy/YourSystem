@@ -20,7 +20,7 @@ const CONFIG = {
     initialGreenMass: 8, // 8x red dot's mass - adjustable via slider
     
     // Trail properties
-    initialTrailLength: 200, // number of positions to store in trail (5x original)
+    initialTrailLength: 400, // number of positions to store in trail
     
     // Rectangle properties
     wallThickness: 3,

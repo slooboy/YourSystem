@@ -14,26 +14,36 @@ function updateDotPosition(dotState, dotGravity, deltaTime) {
     dotState.y += dotState.vy * deltaTime;
     
     // Check for wall collisions and bounce
+    let wallHit = false;
     if (dotState.x <= minX) {
         dotState.x = minX;
         dotState.vx = -dotState.vx; // bounce off left wall
+        wallHit = true;
     } else if (dotState.x >= maxX) {
         dotState.x = maxX;
         dotState.vx = -dotState.vx; // bounce off right wall
+        wallHit = true;
     }
     
     if (dotState.y <= minY) {
         dotState.y = minY;
         dotState.vy = -dotState.vy; // bounce off top wall
+        wallHit = true;
     } else if (dotState.y >= maxY) {
         dotState.y = maxY;
         dotState.vy = -dotState.vy; // bounce off bottom wall
+        wallHit = true;
+    }
+    
+    // Play bass thump sound when object hits a wall
+    if (wallHit) {
+        playBassThump();
     }
     
     return { x: dotState.x, y: dotState.y };
 }
 
-function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime) {
+function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime, dot1Antigravity = false, dot2Antigravity = false) {
     // Calculate distance and direction between objects
     const dx = dot2State.x - dot1State.x;
     const dy = dot2State.y - dot1State.y;
@@ -55,13 +65,18 @@ function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime) 
     const accel1 = forceMagnitude / mass1;
     const accel2 = forceMagnitude / mass2;
     
-    // dot1 is pulled toward dot2
-    dot1State.vx += accel1 * nx * deltaTime;
-    dot1State.vy += accel1 * ny * deltaTime;
+    // Determine force direction based on antigravity state
+    // If antigravity is active, reverse the force direction (repel instead of attract)
+    const dir1 = dot1Antigravity ? -1 : 1;
+    const dir2 = dot2Antigravity ? -1 : 1;
     
-    // dot2 is pulled toward dot1 (opposite direction)
-    dot2State.vx -= accel2 * nx * deltaTime;
-    dot2State.vy -= accel2 * ny * deltaTime;
+    // dot1 is pulled toward dot2 (or repelled if antigravity)
+    dot1State.vx += accel1 * nx * deltaTime * dir1;
+    dot1State.vy += accel1 * ny * deltaTime * dir1;
+    
+    // dot2 is pulled toward dot1 (or repelled if antigravity) (opposite direction)
+    dot2State.vx -= accel2 * nx * deltaTime * dir2;
+    dot2State.vy -= accel2 * ny * deltaTime * dir2;
 }
 
 function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2) {
@@ -107,6 +122,9 @@ function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2)
             dot1State.y -= separationY;
             dot2State.x += separationX;
             dot2State.y += separationY;
+            
+            return true; // Collision detected and resolved
         }
     }
+    return false; // No collision
 }

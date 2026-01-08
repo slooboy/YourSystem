@@ -57,8 +57,11 @@ function drawTrail(trailArray, color) {
     ctx.restore();
 }
 
-function drawDot(x, y) {
-    const radius = CONFIG.dotRadius / 2; // Half size
+function drawDot(x, y, radius) {
+    // radius parameter allows drawing mini-reds with different sizes
+    if (radius === undefined) {
+        radius = CONFIG.dotRadius / 2; // Default: half size for regular red dots
+    }
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -71,7 +74,7 @@ function drawDot(x, y) {
     ctx.fill();
 }
 
-function drawBlueDot(x, y) {
+function drawBlueDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0) {
     // Draw Saturn-like planet with rings seen at an angle
     ctx.save();
     
@@ -81,8 +84,26 @@ function drawBlueDot(x, y) {
     const ringInnerRadius = planetRadius * 1.2; // Inner edge of rings
     const ringTilt = Math.PI / 6; // 30 degree tilt angle
     
+    // Determine color based on antigravity state
+    // Flash between orange and blue in last 0.5 seconds (rapidly)
+    let useOrange = false;
+    if (antigravityActive) {
+        if (antigravityTimeRemaining <= 0.5) {
+            // Flash rapidly: change color every ~0.1 seconds (10 times per second)
+            const flashRate = 10; // flashes per second
+            const flashPhase = Math.floor(antigravityTimeRemaining * flashRate);
+            useOrange = flashPhase % 2 === 0; // Alternate between orange and blue
+        } else {
+            useOrange = true; // Solid orange for first 2.5 seconds
+        }
+    }
+    
+    const ringColor = useOrange ? '#ff8c00' : '#3498db'; // Orange or blue
+    const planetColor = useOrange ? '#ff8c00' : '#3498db';
+    const highlightColor = useOrange ? '#ffa64d' : '#5dade2';
+    
     // Draw rings first (so planet appears in front)
-    ctx.strokeStyle = '#3498db';
+    ctx.strokeStyle = ringColor;
     ctx.lineWidth = ringWidth;
     ctx.beginPath();
     
@@ -102,13 +123,13 @@ function drawBlueDot(x, y) {
     ctx.restore();
     
     // Draw the planet (circle) on top of the rings
-    ctx.fillStyle = '#3498db';
+    ctx.fillStyle = planetColor;
     ctx.beginPath();
     ctx.arc(x, y, planetRadius, 0, Math.PI * 2);
     ctx.fill();
     
     // Add a highlight to the planet
-    ctx.fillStyle = '#5dade2';
+    ctx.fillStyle = highlightColor;
     ctx.beginPath();
     ctx.arc(x - planetRadius * 0.3, y - planetRadius * 0.3, planetRadius * 0.4, 0, Math.PI * 2);
     ctx.fill();
@@ -116,10 +137,27 @@ function drawBlueDot(x, y) {
     ctx.restore();
 }
 
-function drawGreenDot(x, y) {
+function drawGreenDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0) {
     // Draw 5-pointed star (twice as large)
     ctx.save();
-    ctx.fillStyle = '#2ecc71';
+    
+    // Determine color based on antigravity state
+    // Flash between orange and green in last 0.5 seconds (rapidly)
+    let useOrange = false;
+    if (antigravityActive) {
+        if (antigravityTimeRemaining <= 0.5) {
+            // Flash rapidly: change color every ~0.1 seconds (10 times per second)
+            const flashRate = 10; // flashes per second
+            const flashPhase = Math.floor(antigravityTimeRemaining * flashRate);
+            useOrange = flashPhase % 2 === 0; // Alternate between orange and green
+        } else {
+            useOrange = true; // Solid orange for first 2.5 seconds
+        }
+    }
+    
+    const starColor = useOrange ? '#ff8c00' : '#2ecc71'; // Orange or green
+    
+    ctx.fillStyle = starColor;
     ctx.beginPath();
     
     const outerRadius = CONFIG.dotRadius * 2; // Twice as large
@@ -141,6 +179,33 @@ function drawGreenDot(x, y) {
     
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+}
+
+function drawCloud(x, y, radius, puffs) {
+    // Draw an ethereal, cloud-like shape using multiple overlapping circles
+    ctx.save();
+    
+    // Use composite operation to blend overlapping shapes
+    ctx.globalCompositeOperation = 'source-over';
+    
+    // Draw each puff with a soft gradient
+    for (let i = 0; i < puffs.length; i++) {
+        const puff = puffs[i];
+        const gradient = ctx.createRadialGradient(
+            puff.x, puff.y, 0,
+            puff.x, puff.y, puff.r
+        );
+        gradient.addColorStop(0, 'rgba(150, 150, 150, 0.5)');
+        gradient.addColorStop(0.6, 'rgba(150, 150, 150, 0.3)');
+        gradient.addColorStop(1, 'rgba(150, 150, 150, 0)');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(puff.x, puff.y, puff.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
     ctx.restore();
 }
 
