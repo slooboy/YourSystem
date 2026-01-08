@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncing Dot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Your System</h1>
+        <canvas id="canvas"></canvas>
+        <div class="info">
+            <div class="controls-wrapper">
+                <div class="control-group">
+                    <label for="gravityControl">Gravitational Constant (G):</label>
+                    <input type="range" id="gravityControl" min="0" max="20000" value="10000" step="100">
+                    <span id="gravityValue">10000</span>
+                </div>
+                <div class="control-group">
+                    <label for="greenMassControl">Green Star Mass:</label>
+                    <input type="range" id="greenMassControl" min="1" max="20" value="8" step="1">
+                    <span id="greenMassValue">8</span>
+                </div>
+                <div class="control-group">
+                    <label for="trailLengthControl">Trail Length:</label>
+                    <input type="range" id="trailLengthControl" min="50" max="1000" value="500" step="50">
+                    <span id="trailLengthValue">200</span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="resetButton" class="reset-button">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/drawing.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/initialization.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/animation.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
