@@ -42,6 +42,11 @@ function initializeCanvas() {
         if (typeof generateStars === 'function') {
             generateStars();
         }
+        // Adjust title font size after layout
+        const titleElement = document.querySelector('h1');
+        if (titleElement && typeof adjustTitleFontSize === 'function') {
+            adjustTitleFontSize(titleElement);
+        }
     }, 100);
 }
 
@@ -57,5 +62,10 @@ window.addEventListener('resize', function() {
     resizeCanvas();
     if (typeof generateStars === 'function') {
         generateStars();
+    }
+    // Adjust title font size after resize
+    const titleElement = document.querySelector('h1');
+    if (titleElement && typeof adjustTitleFontSize === 'function') {
+        adjustTitleFontSize(titleElement);
     }
 });

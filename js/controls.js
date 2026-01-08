@@ -32,29 +32,20 @@ trailLengthControl.addEventListener('input', function() {
 audioVolumeControl.addEventListener('input', function() {
     audioVolume = parseInt(this.value);
     audioVolumeValue.textContent = audioVolume;
-    updateMasterVolume(); // Update master gain node volume
-    // Initialize audio if volume > 0 and not already initialized
+    if (typeof updateMasterVolume === 'function') {
+        updateMasterVolume();
+    }
+    // Start/stop pink noise based on volume
     if (audioVolume > 0) {
-        initAudio();
+        if (typeof startPinkNoise === 'function') {
+            startPinkNoise();
+        }
+    } else {
+        if (typeof stopPinkNoise === 'function') {
+            stopPinkNoise();
+        }
     }
 });
 
 // Set up reset button
-resetButton.addEventListener('click', function() {
-    initAudio(); // Initialize audio on first user interaction
-    resetSimulation();
-});
-
-// Initialize audio on canvas click (user interaction required for Web Audio API)
-canvas.addEventListener('click', function() {
-    initAudio();
-    // Test sound on first click to verify audio works
-    if (audioContext && audioContext.state === 'running') {
-        setTimeout(() => playGuitarDPluck(), 100);
-    }
-});
-canvas.addEventListener('touchstart', initAudio);
-
-// Also try to initialize on any user interaction
-document.addEventListener('click', initAudio, { once: true });
-document.addEventListener('keydown', initAudio, { once: true });
+resetButton.addEventListener('click', resetSimulation);

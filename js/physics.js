@@ -14,33 +14,43 @@ function updateDotPosition(dotState, dotGravity, deltaTime) {
     dotState.y += dotState.vy * deltaTime;
     
     // Check for wall collisions and bounce
-    let wallHit = false;
+    let leftRightWallHit = false;
+    let topBottomWallHit = false;
+    
     if (dotState.x <= minX) {
         dotState.x = minX;
         dotState.vx = -dotState.vx; // bounce off left wall
-        wallHit = true;
+        leftRightWallHit = true;
     } else if (dotState.x >= maxX) {
         dotState.x = maxX;
         dotState.vx = -dotState.vx; // bounce off right wall
-        wallHit = true;
+        leftRightWallHit = true;
     }
     
     if (dotState.y <= minY) {
         dotState.y = minY;
         dotState.vy = -dotState.vy; // bounce off top wall
-        wallHit = true;
+        topBottomWallHit = true;
     } else if (dotState.y >= maxY) {
         dotState.y = maxY;
         dotState.vy = -dotState.vy; // bounce off bottom wall
-        wallHit = true;
+        topBottomWallHit = true;
     }
     
-    // Play bass thump sound when object hits a wall
-    if (wallHit) {
+    // Play snare tap for left/right walls, bass thump for top/bottom walls
+    if (leftRightWallHit) {
+        playSnareTap();
+    }
+    if (topBottomWallHit) {
         playBassThump();
     }
     
-    return { x: dotState.x, y: dotState.y };
+    // Return position and wall hit information
+    return { 
+        x: dotState.x, 
+        y: dotState.y,
+        wallHit: leftRightWallHit || topBottomWallHit
+    };
 }
 
 function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime, dot1Antigravity = false, dot2Antigravity = false) {

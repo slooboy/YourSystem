@@ -21,17 +21,20 @@ let greenMass = CONFIG.initialGreenMass;
 // Trail length (adjustable)
 let trailLength = CONFIG.initialTrailLength;
 
-// Audio volume (0-10, where 0 is off and 10 is full volume)
-let audioVolume = 1;
+// Audio volume (0-11, where 0 is off and 11 is full volume)
+let audioVolume = 5;
 
 // Red dots array - each red dot is an object with position, velocity, mass, radius, collision counts, and trail
-const redDots = []; // Array of { x, y, vx, vy, mass, radius, blueCollisionCount, greenCollisionCount, trail }
+const redDots = []; // Array of { x, y, vx, vy, mass, radius, blueCollisionCount, greenCollisionCount, trail, fadeInTime, cloudFadeAmount }
 
 // Green dots array - each green dot is an object with position, velocity, trail, antigravity state, and cloud time
-const greenDots = []; // Array of { x, y, vx, vy, trail, blueCollisionCount, antigravityActive, antigravityTimeRemaining, cloudTime }
+const greenDots = []; // Array of { x, y, vx, vy, trail, blueCollisionCount, greenCollisionCount, antigravityActive, antigravityTimeRemaining, cloudTime }
 
-// Clouds array - each cloud is an object with position, radius, and shape data (clouds don't move)
-const clouds = []; // Array of { x, y, radius, puffs }
+// Clouds array - each cloud is an object with position, radius, shape data, and mass (clouds don't move)
+const clouds = []; // Array of { x, y, radius, puffs, mass, fadeInTime }
+
+// Yellow crescents array - each crescent is an object with position, velocity, mass, and radius
+const yellowCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime, decayTime, dissolveTime, transformType }
 
 // Trail arrays for other objects
 const blueTrail = []; // blue dot
@@ -42,6 +45,7 @@ const stars = []; // array to store star positions and opacities
 // Physics state for blue dot
 let blueDotX, blueDotY; // current position
 let blueVx, blueVy; // velocity
+let blueDotFadeInTime = 0; // Time since creation (for fade-in effect, 0 to 1.0 seconds)
 
 // Blue-green collision counter (for generating clouds)
 let blueGreenCollisionCount = 0;
@@ -66,9 +70,15 @@ let lastOrganChordTime = 0; // in seconds
 // Reset counter (for title language changes)
 let resetCount = 0;
 
-// Track last two languages shown (for ensuring English appears at least every 3 resets)
-let lastTwoLanguages = ['english', 'english']; // Initialize with English
+// Track last nine languages shown (for ensuring English appears at least every 10 resets)
+let lastNineLanguages = ['english', 'english', 'english', 'english', 'english', 'english', 'english', 'english', 'english']; // Initialize with English
 let currentLanguageIndex = 0; // Track position in language order for cycling
+
+// Automatic title cycling (independent of resets)
+let autoTitleCycleCount = 0; // Counter for automatic title cycles
+let lastAutoTitleChangeTime = 0; // Time of last automatic title change
+let autoTitleCyclingStarted = false; // Whether automatic cycling has started
+let titleUpdateInProgress = false; // Flag to prevent multiple simultaneous title updates
 
 let lastUpdateTime = 0;
 let startTime = Date.now();

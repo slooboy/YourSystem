@@ -13,64 +13,17 @@ function animate() {
     // Limit deltaTime to prevent large jumps
     deltaTime = Math.min(deltaTime, 0.1);
     
-    // Get current time for windchime timing
-    const currentTime = Date.now() / 1000;
-    
-    // Update background choral
-    updateBackgroundChoral(deltaTime);
-    
-    // Update antigravity timers and play windchime sounds
-    if (blueAntigravityActive) {
-        blueAntigravityTimeRemaining -= deltaTime;
-        if (blueAntigravityTimeRemaining <= 0) {
-            blueAntigravityActive = false;
-            blueAntigravityTimeRemaining = 0;
-            lastBlueWindchimeTime = 0; // Reset windchime timer
-        } else {
-            // Play windchime sound periodically while antigravity is active
-            if (currentTime - lastBlueWindchimeTime >= windchimeInterval) {
-                playWindchime();
-                lastBlueWindchimeTime = currentTime;
-            }
-        }
-    } else {
-        lastBlueWindchimeTime = 0; // Reset when not active
-    }
-    
-    // Update green dot antigravity timers and play windchime sounds
-    for (let i = 0; i < greenDots.length; i++) {
-        if (greenDots[i].antigravityActive) {
-            greenDots[i].antigravityTimeRemaining -= deltaTime;
-            if (greenDots[i].antigravityTimeRemaining <= 0) {
-                greenDots[i].antigravityActive = false;
-                greenDots[i].antigravityTimeRemaining = 0;
-                if (greenDots[i].lastWindchimeTime !== undefined) {
-                    greenDots[i].lastWindchimeTime = 0; // Reset windchime timer
-                }
-            } else {
-                // Play windchime sound periodically while antigravity is active
-                if (!greenDots[i].lastWindchimeTime) {
-                    greenDots[i].lastWindchimeTime = 0;
-                }
-                if (currentTime - greenDots[i].lastWindchimeTime >= windchimeInterval) {
-                    playWindchime();
-                    greenDots[i].lastWindchimeTime = currentTime;
-                }
-            }
-        } else {
-            if (greenDots[i].lastWindchimeTime !== undefined) {
-                greenDots[i].lastWindchimeTime = 0; // Reset when not active
-            }
-        }
-    }
+    // Get current time for timing calculations
+    const currentTime = (Date.now() - startTime) / 1000;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Create state objects for all dots (work with these throughout the frame)
+    // Create state objects for all objects (for physics calculations)
     const redDotStates = redDots.map(dot => ({ x: dot.x, y: dot.y, vx: dot.vx, vy: dot.vy }));
     const blueDotState = { x: blueDotX, y: blueDotY, vx: blueVx, vy: blueVy };
     const greenDotStates = greenDots.map(dot => ({ x: dot.x, y: dot.y, vx: dot.vx, vy: dot.vy }));
+    const yellowCrescentStates = yellowCrescents.map(crescent => ({ x: crescent.x, y: crescent.y, vx: crescent.vx, vy: crescent.vy }));
     
     // Apply gravitational forces between all pairs of objects
     // Red dots with each other (using individual masses)
@@ -80,12 +33,12 @@ function animate() {
         }
     }
     
-    // Red dots with blue dot (using individual masses)
+    // Red dots with blue dot
     for (let i = 0; i < redDotStates.length; i++) {
         applyGravitationalForce(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
     }
     
-    // Red dots with green dots (using individual masses)
+    // Red dots with green dots
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
             applyGravitationalForce(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
@@ -104,27 +57,64 @@ function animate() {
         }
     }
     
-    // Clouds with all other objects (clouds have 0.1x red mass)
-    const cloudMass = CONFIG.redMass * 0.1;
+    // Yellow crescents with red dots
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = 0; j < redDotStates.length; j++) {
+            applyGravitationalForce(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, deltaTime);
+        }
+    }
+    
+    // Yellow crescents with blue dot
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        applyGravitationalForce(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+    }
+    
+    // Yellow crescents with green dots
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = 0; j < greenDotStates.length; j++) {
+            applyGravitationalForce(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+        }
+    }
+    
+    // Yellow crescents with each other
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = i + 1; j < yellowCrescentStates.length; j++) {
+            applyGravitationalForce(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, deltaTime);
+        }
+    }
+    
+    // Clouds with all other objects (clouds have individual mass, default 0.1x red mass)
     for (let i = 0; i < clouds.length; i++) {
         const cloud = clouds[i];
         const cloudState = { x: cloud.x, y: cloud.y, vx: 0, vy: 0 }; // Clouds don't move
         
         // Clouds with red dots (using individual masses)
         for (let j = 0; j < redDotStates.length; j++) {
-            applyGravitationalForce(cloudState, redDotStates[j], cloudMass, redDots[j].mass, deltaTime);
+            applyGravitationalForce(cloudState, redDotStates[j], cloud.mass, redDots[j].mass, deltaTime);
         }
         // Clouds with blue dot
-        applyGravitationalForce(cloudState, blueDotState, cloudMass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        applyGravitationalForce(cloudState, blueDotState, cloud.mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
         // Clouds with green dots
         for (let j = 0; j < greenDotStates.length; j++) {
-            applyGravitationalForce(cloudState, greenDotStates[j], cloudMass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+            applyGravitationalForce(cloudState, greenDotStates[j], cloud.mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
         }
     }
     
     // Update all red dots positions (using the state objects that have accumulated gravitational forces)
+    // Track new red dots to create (to avoid modifying array during iteration)
+    const newRedDotsToCreate = [];
     for (let i = 0; i < redDotStates.length; i++) {
-        updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
+        const result = updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
+        
+        // New rule: if there are only 2 red dots and one hits a wall, create a new red dot
+        if (result.wallHit && redDots.length === 2) {
+            newRedDotsToCreate.push(initializeRedDot());
+        }
+    }
+    
+    // Add new red dots after the loop
+    for (let i = 0; i < newRedDotsToCreate.length; i++) {
+        redDots.push(newRedDotsToCreate[i]);
     }
     
     // Update blue dot position using physics (same gravity for all)
@@ -135,10 +125,17 @@ function animate() {
         updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
     }
     
+    // Update all yellow crescents positions (using the state objects that have accumulated gravitational forces)
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
+    }
+    
     // Apply cloud drag effect - objects passing through clouds lose half their momentum
-    // Also track red dots that pass through clouds (they disappear)
+    // Track red dots in clouds for fade-based deletion
     // Track time blue and green dots spend in clouds for antigravity activation
-    const redDotsToRemove = []; // Track indices of red dots that pass through clouds
+    const redDotsToRemove = []; // Track indices of red dots that have faded to 0
+    const redDotsToSplit = []; // Track indices of red dots that exited clouds with fade > 0
+    const redDotsInCloud = new Set(); // Track which red dots are currently in clouds
     const redDotsPlayedSound = new Set(); // Track which red dots have already played the sound this frame
     
     // First pass: check if blue and green dots are in any cloud
@@ -149,19 +146,42 @@ function animate() {
         const cloud = clouds[i];
         const cloudRadius = cloud.radius; // Use individual cloud radius
         
-        // Check red dots - if they pass through cloud, they disappear
+        // Check red dots - track which are in clouds and apply fade
         for (let j = 0; j < redDotStates.length; j++) {
             const dx = redDotStates[j].x - cloud.x;
             const dy = redDotStates[j].y - cloud.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < cloudRadius) {
-                // Red dot is inside cloud - mark for removal (store index)
-                redDotsToRemove.push(j);
-                
-                // Play breathy vocal "waaah" sound for red-grey collision (once per red dot)
-                if (!redDotsPlayedSound.has(j)) {
-                    playBreathyVocalWaaah();
-                    redDotsPlayedSound.add(j);
+                // Check if this is a mini-red (mini-reds are exempt from cloud effects)
+                const miniRadius = CONFIG.dotRadius / 4;
+                if (redDots[j].radius !== miniRadius) {
+                    // Regular red dot is inside cloud
+                    redDotsInCloud.add(j);
+                    
+                    // Initialize cloudFadeAmount if not present
+                    if (redDots[j].cloudFadeAmount === undefined) {
+                        redDots[j].cloudFadeAmount = 1.0;
+                    }
+                    
+                    // Fade by 25% per second (0.25 * deltaTime)
+                    redDots[j].cloudFadeAmount -= 0.25 * deltaTime;
+                    
+                    // Clamp fade amount to 0
+                    if (redDots[j].cloudFadeAmount <= 0) {
+                        redDots[j].cloudFadeAmount = 0;
+                        // Mark for removal if faded to 0
+                        if (!redDotsToRemove.includes(j)) {
+                            redDotsToRemove.push(j);
+                        }
+                    }
+                    
+                    // Play breathy vocal "waaah" sound for red-grey collision (once per red dot)
+                    if (!redDotsPlayedSound.has(j)) {
+                        if (typeof playBreathyVocalWaaah === 'function') {
+                            playBreathyVocalWaaah();
+                        }
+                        redDotsPlayedSound.add(j);
+                    }
                 }
             }
         }
@@ -189,6 +209,66 @@ function animate() {
                 blueDotState.vx *= scale;
                 blueDotState.vy *= scale;
             }
+            
+            // Track time blue dot spends in cloud
+            blueCloudTime += deltaTime;
+            
+            // Activate antigravity if blue dot has been in cloud for 10 seconds
+            if (blueCloudTime >= 10.0 && !blueAntigravityActive) {
+                blueAntigravityActive = true;
+                blueAntigravityTimeRemaining = 3.0; // 3 seconds
+                blueCloudTime = 0; // Reset cloud time
+                
+                // Ensure blue dot has at least 50px/s velocity when entering antigravity
+                const currentSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
+                if (currentSpeed < 50) {
+                    const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
+                    const randomAngle = Math.random() * Math.PI * 2; // Random direction
+                    blueVx = Math.cos(randomAngle) * randomSpeed;
+                    blueVy = Math.sin(randomAngle) * randomSpeed;
+                    blueDotState.vx = blueVx;
+                    blueDotState.vy = blueVy;
+                }
+                
+                // Create yellow crescent and two red dots at cloud position
+                const cloudIndex = clouds.findIndex(c => {
+                    const dx = blueDotState.x - c.x;
+                    const dy = blueDotState.y - c.y;
+                    return Math.sqrt(dx * dx + dy * dy) < c.radius;
+                });
+                if (cloudIndex >= 0) {
+                    const cloud = clouds[cloudIndex];
+                    const newYellow = initializeYellowCrescent(cloud.x, cloud.y);
+                    // Cap velocity at 45 px/s on creation
+                    const speed = Math.sqrt(newYellow.vx * newYellow.vx + newYellow.vy * newYellow.vy);
+                    if (speed > 45) {
+                        const scale = 45 / speed;
+                        newYellow.vx *= scale;
+                        newYellow.vy *= scale;
+                    }
+                    yellowCrescents.push(newYellow);
+                    
+                    // Create two new red dots at cloud position
+                    const redDot1 = initializeRedDot();
+                    redDot1.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
+                    redDot1.y = cloud.y + (Math.random() - 0.5) * 20;
+                    redDots.push(redDot1);
+                    
+                    const redDot2 = initializeRedDot();
+                    redDot2.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
+                    redDot2.y = cloud.y + (Math.random() - 0.5) * 20;
+                    redDots.push(redDot2);
+                    
+                    // Change cloud shape and acquire mass instead of removing
+                    changeCloudShapeAndMass(cloud);
+                    if (typeof playWoodblockClap === 'function') {
+                        playWoodblockClap();
+                    }
+                }
+            }
+        } else {
+            // Blue dot is not in any cloud - reset cloud time
+            blueCloudTime = 0;
         }
         
         // Check green dots
@@ -215,88 +295,74 @@ function animate() {
                     greenDotStates[j].vx *= scale;
                     greenDotStates[j].vy *= scale;
                 }
-            }
-        }
-    }
-    
-    // Update blue dot cloud time and activate antigravity if needed
-    if (blueInCloud) {
-        blueCloudTime += deltaTime;
-        // Activate antigravity if blue has been in cloud for 10 seconds
-        if (blueCloudTime >= 10.0 && !blueAntigravityActive) {
-            blueAntigravityActive = true;
-            blueAntigravityTimeRemaining = 3.0; // 3 seconds of antigravity
-            blueCloudTime = 0; // Reset cloud time
-            
-            // Give blue dot a random velocity when entering antigravity from cloud
-            const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
-            const randomAngle = Math.random() * Math.PI * 2; // Random direction
-            blueVx = Math.cos(randomAngle) * randomSpeed;
-            blueVy = Math.sin(randomAngle) * randomSpeed;
-            blueDotState.vx = blueVx;
-            blueDotState.vy = blueVy;
-            
-            // Remove the cloud that blue dot is in (find which cloud it's in)
-            for (let i = clouds.length - 1; i >= 0; i--) {
-                const cloud = clouds[i];
-                const dx = blueDotState.x - cloud.x;
-                const dy = blueDotState.y - cloud.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < cloud.radius) {
-                    clouds.splice(i, 1);
-                    playWoodblockClap(); // Play woodblock clap when cloud disappears
-                    break; // Only remove one cloud
-                }
-            }
-        }
-    } else {
-        // Blue dot is not in any cloud - reset cloud time
-        blueCloudTime = 0;
-    }
-    
-    // Update green dots cloud time and activate antigravity if needed
-    for (let j = 0; j < greenDotStates.length; j++) {
-        if (greenInCloud[j]) {
-            // Green dot is in a cloud - increment cloud time
-            greenDots[j].cloudTime += deltaTime;
-            
-            // Activate antigravity if green has been in cloud for 10 seconds
-            if (greenDots[j].cloudTime >= 10.0 && !greenDots[j].antigravityActive) {
-                greenDots[j].antigravityActive = true;
-                greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds of antigravity
-                greenDots[j].cloudTime = 0; // Reset cloud time
                 
-                // Give green dot a random velocity when entering antigravity from cloud
-                const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
-                const randomAngle = Math.random() * Math.PI * 2; // Random direction
-                greenDots[j].vx = Math.cos(randomAngle) * randomSpeed;
-                greenDots[j].vy = Math.sin(randomAngle) * randomSpeed;
-                greenDotStates[j].vx = greenDots[j].vx;
-                greenDotStates[j].vy = greenDots[j].vy;
+                // Track time green dot spends in cloud
+                greenDots[j].cloudTime += deltaTime;
                 
-                // Remove the cloud that green dot is in (find which cloud it's in)
-                for (let i = clouds.length - 1; i >= 0; i--) {
-                    const cloud = clouds[i];
-                    const dx = greenDotStates[j].x - cloud.x;
-                    const dy = greenDotStates[j].y - cloud.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < cloud.radius) {
-                        clouds.splice(i, 1);
-                        playWoodblockClap(); // Play woodblock clap when cloud disappears
-                        break; // Only remove one cloud
+                // Activate antigravity if green dot has been in cloud for 10 seconds
+                if (greenDots[j].cloudTime >= 10.0 && !greenDots[j].antigravityActive) {
+                    greenDots[j].antigravityActive = true;
+                    greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds
+                    greenDots[j].cloudTime = 0; // Reset cloud time
+                    
+                    // Ensure green dot has at least 50px/s velocity when entering antigravity
+                    const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
+                    if (currentSpeed < 50) {
+                        const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
+                        const randomAngle = Math.random() * Math.PI * 2; // Random direction
+                        greenDots[j].vx = Math.cos(randomAngle) * randomSpeed;
+                        greenDots[j].vy = Math.sin(randomAngle) * randomSpeed;
+                        greenDotStates[j].vx = greenDots[j].vx;
+                        greenDotStates[j].vy = greenDots[j].vy;
+                    }
+                    
+                    // Create yellow crescent and two red dots at cloud position
+                    const cloudIndex = clouds.findIndex(c => {
+                        const dx = greenDotStates[j].x - c.x;
+                        const dy = greenDotStates[j].y - c.y;
+                        return Math.sqrt(dx * dx + dy * dy) < c.radius;
+                    });
+                    if (cloudIndex >= 0) {
+                        const cloud = clouds[cloudIndex];
+                        const newYellow = initializeYellowCrescent(cloud.x, cloud.y);
+                        // Cap velocity at 45 px/s on creation
+                        const speed = Math.sqrt(newYellow.vx * newYellow.vx + newYellow.vy * newYellow.vy);
+                        if (speed > 45) {
+                            const scale = 45 / speed;
+                            newYellow.vx *= scale;
+                            newYellow.vy *= scale;
+                        }
+                        yellowCrescents.push(newYellow);
+                        
+                        // Create two new red dots at cloud position
+                        const redDot1 = initializeRedDot();
+                        redDot1.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
+                        redDot1.y = cloud.y + (Math.random() - 0.5) * 20;
+                        redDots.push(redDot1);
+                        
+                        const redDot2 = initializeRedDot();
+                        redDot2.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
+                        redDot2.y = cloud.y + (Math.random() - 0.5) * 20;
+                        redDots.push(redDot2);
+                        
+                        // Change cloud shape and acquire mass instead of removing
+                        changeCloudShapeAndMass(cloud);
+                        if (typeof playWoodblockClap === 'function') {
+                            playWoodblockClap();
+                        }
                     }
                 }
+            } else {
+                // Green dot is not in any cloud - reset cloud time
+                greenDots[j].cloudTime = 0;
             }
-        } else {
-            // Green dot is not in any cloud - reset cloud time
-            greenDots[j].cloudTime = 0;
         }
     }
     
     // Check for collisions between all pairs of dots (with mass-based physics)
     // Track red dots that need to be split
-    const redDotsToSplit = [];
-    // Track mini-red pairs that should merge into a regular red (0.25 chance)
+    const redDotsToSplitCollision = [];
+    // Track mini-red pairs that should merge into a regular red (0.05 chance)
     const miniRedPairsToMerge = [];
     
     // Red dots with each other (using individual masses and radii)
@@ -305,13 +371,15 @@ function animate() {
         for (let j = i + 1; j < redDotStates.length; j++) {
             if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, redDots[i].radius, redDots[j].radius)) {
                 // Play guitar D pluck sound for red-red collision
-                playGuitarDPluck();
+                if (typeof playGuitarDPluck === 'function') {
+                    playGuitarDPluck();
+                }
                 
                 // Check if both are mini-reds (mini-reds have radius = CONFIG.dotRadius / 4)
                 const miniRadius = CONFIG.dotRadius / 4;
                 if (redDots[i].radius === miniRadius && redDots[j].radius === miniRadius) {
-                    // 0.25 chance to merge into a regular red
-                    if (Math.random() < 0.25) {
+                    // 0.05 chance (5%) to merge into a regular red
+                    if (Math.random() < 0.05) {
                         miniRedPairsToMerge.push({ i: i, j: j });
                     }
                 }
@@ -324,12 +392,16 @@ function animate() {
     for (let i = 0; i < redDotStates.length; i++) {
         if (checkDotCollision(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, redDots[i].radius, CONFIG.dotRadius)) {
             // Play piano C# sound for blue-red collision
-            playPianoCSharp();
+            if (typeof playPianoCSharp === 'function') {
+                playPianoCSharp();
+            }
             
+            const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
             redDots[i].blueCollisionCount++;
-            // Check if should split (50 total collisions with blue OR green)
-            if (redDots[i].blueCollisionCount + redDots[i].greenCollisionCount >= 50) {
-                redDotsToSplit.push(i);
+            
+            // Check if should split: 20 total collisions, then 1 in 5 chance on next collision
+            if (totalCollisions >= 20 && Math.random() < 0.2) {
+                redDotsToSplitCollision.push(i);
             }
         }
     }
@@ -340,12 +412,16 @@ function animate() {
         for (let j = 0; j < greenDotStates.length; j++) {
             if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, redDots[i].radius, CONFIG.dotRadius * 2)) {
                 // Play violin pizzicato high E sound for red-green collision
-                playViolinPizzicatoHighE();
+                if (typeof playViolinPizzicatoHighE === 'function') {
+                    playViolinPizzicatoHighE();
+                }
                 
+                const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
                 redDots[i].greenCollisionCount++;
-                // Check if should split (50 total collisions with blue OR green)
-                if (redDots[i].blueCollisionCount + redDots[i].greenCollisionCount >= 50) {
-                    redDotsToSplit.push(i);
+                
+                // Check if should split: 20 total collisions, then 1 in 5 chance on next collision
+                if (totalCollisions >= 20 && Math.random() < 0.2) {
+                    redDotsToSplitCollision.push(i);
                 }
             }
         }
@@ -355,7 +431,9 @@ function animate() {
     for (let i = 0; i < greenDotStates.length; i++) {
         if (checkDotCollision(blueDotState, greenDotStates[i], CONFIG.blueMass, greenMass, CONFIG.dotRadius, CONFIG.dotRadius * 2)) {
             // Play organ F2 sound for blue-green collision
-            playOrganF2();
+            if (typeof playOrganF2 === 'function') {
+                playOrganF2();
+            }
             
             // Apply random 0-0.5 multiplier to blue's y velocity
             const randomMultiplier = Math.random() * 0.5; // Random value between 0 and 0.5
@@ -416,7 +494,97 @@ function animate() {
         for (let j = i + 1; j < greenDotStates.length; j++) {
             if (checkDotCollision(greenDotStates[i], greenDotStates[j], greenMass, greenMass, CONFIG.dotRadius * 2, CONFIG.dotRadius * 2)) {
                 // Play harmonica Eb3 sound for green-green collision
-                playHarmonicaEb3();
+                if (typeof playHarmonicaEb3 === 'function') {
+                    playHarmonicaEb3();
+                }
+                
+                // Increment collision counters for both green dots
+                greenDots[i].greenCollisionCount++;
+                greenDots[j].greenCollisionCount++;
+                
+                // Activate antigravity for first green dot after 150 green-green collisions (3 seconds)
+                if (greenDots[i].greenCollisionCount >= 150 && !greenDots[i].antigravityActive) {
+                    greenDots[i].antigravityActive = true;
+                    greenDots[i].antigravityTimeRemaining = 3.0; // 3 seconds
+                    greenDots[i].greenCollisionCount = 0; // Reset counter
+                    
+                    // Ensure green dot has at least 50px/s velocity when entering antigravity
+                    const currentSpeed = Math.sqrt(greenDotStates[i].vx * greenDotStates[i].vx + greenDotStates[i].vy * greenDotStates[i].vy);
+                    if (currentSpeed < 50) {
+                        // If speed is too low, give it a random velocity of at least 50px/s
+                        const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
+                        const randomAngle = Math.random() * Math.PI * 2; // Random direction
+                        greenDots[i].vx = Math.cos(randomAngle) * randomSpeed;
+                        greenDots[i].vy = Math.sin(randomAngle) * randomSpeed;
+                        greenDotStates[i].vx = greenDots[i].vx;
+                        greenDotStates[i].vy = greenDots[i].vy;
+                    }
+                }
+                
+                // Activate antigravity for second green dot after 150 green-green collisions (3 seconds)
+                if (greenDots[j].greenCollisionCount >= 150 && !greenDots[j].antigravityActive) {
+                    greenDots[j].antigravityActive = true;
+                    greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds
+                    greenDots[j].greenCollisionCount = 0; // Reset counter
+                    
+                    // Ensure green dot has at least 50px/s velocity when entering antigravity
+                    const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
+                    if (currentSpeed < 50) {
+                        // If speed is too low, give it a random velocity of at least 50px/s
+                        const randomSpeed = Math.random() * 200 + 50; // Random between 50 and 250 pixels/second
+                        const randomAngle = Math.random() * Math.PI * 2; // Random direction
+                        greenDots[j].vx = Math.cos(randomAngle) * randomSpeed;
+                        greenDots[j].vy = Math.sin(randomAngle) * randomSpeed;
+                        greenDotStates[j].vx = greenDots[j].vx;
+                        greenDotStates[j].vy = greenDots[j].vy;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Yellow crescents with red dots
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = 0; j < redDotStates.length; j++) {
+            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, yellowCrescents[i].radius, redDots[j].radius)) {
+                // Play tomtom bump sound for yellow crescent collision
+                if (typeof playTomtomBump === 'function') {
+                    playTomtomBump();
+                }
+            }
+        }
+    }
+    
+    // Yellow crescents with blue dot
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        if (checkDotCollision(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, yellowCrescents[i].radius, CONFIG.dotRadius)) {
+            // Play tomtom bump sound for yellow crescent collision
+            if (typeof playTomtomBump === 'function') {
+                playTomtomBump();
+            }
+        }
+    }
+    
+    // Yellow crescents with green dots
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = 0; j < greenDotStates.length; j++) {
+            if (checkDotCollision(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, yellowCrescents[i].radius, CONFIG.dotRadius * 2)) {
+                // Play tomtom bump sound for yellow crescent collision
+                if (typeof playTomtomBump === 'function') {
+                    playTomtomBump();
+                }
+            }
+        }
+    }
+    
+    // Yellow crescents with each other
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        for (let j = i + 1; j < yellowCrescentStates.length; j++) {
+            if (checkDotCollision(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, yellowCrescents[i].radius, yellowCrescents[j].radius)) {
+                // Play tomtom bump sound for yellow crescent collision
+                if (typeof playTomtomBump === 'function') {
+                    playTomtomBump();
+                }
             }
         }
     }
@@ -442,6 +610,28 @@ function animate() {
         greenDots[i].vy = greenDotStates[i].vy;
     }
     
+    // Update yellowCrescents array with final positions/velocities
+    for (let i = 0; i < yellowCrescentStates.length; i++) {
+        yellowCrescents[i].x = yellowCrescentStates[i].x;
+        yellowCrescents[i].y = yellowCrescentStates[i].y;
+        yellowCrescents[i].vx = yellowCrescentStates[i].vx;
+        yellowCrescents[i].vy = yellowCrescentStates[i].vy;
+        
+        // Cap velocity at 45 px/s on creation (check if this is a newly created yellow crescent)
+        // Newly created yellow crescents have fadeInTime === 0 or very small
+        if (yellowCrescents[i].fadeInTime !== undefined && yellowCrescents[i].fadeInTime < 0.2) {
+            const speed = Math.sqrt(yellowCrescents[i].vx * yellowCrescents[i].vx + yellowCrescents[i].vy * yellowCrescents[i].vy);
+            if (speed > 45) {
+                const scale = 45 / speed;
+                yellowCrescents[i].vx *= scale;
+                yellowCrescents[i].vy *= scale;
+                // Also update the state object to keep them in sync
+                yellowCrescentStates[i].vx = yellowCrescents[i].vx;
+                yellowCrescentStates[i].vy = yellowCrescents[i].vy;
+            }
+        }
+    }
+    
     // Check for cloud-cloud collisions (clouds don't move, so check if they overlap)
     const cloudsToRemove = [];
     for (let i = 0; i < clouds.length; i++) {
@@ -465,17 +655,19 @@ function animate() {
         const index = uniqueCloudsToRemove[i];
         if (index >= 0 && index < clouds.length) {
             clouds.splice(index, 1);
-            playWoodblockClap(); // Play woodblock clap when cloud disappears
+            if (typeof playWoodblockClap === 'function') {
+                playWoodblockClap();
+            }
         }
     }
     
-    // Split red dots that have reached 50 collisions with blue or green (process in reverse order to avoid index issues)
-    const uniqueRedDotsToSplit = [...new Set(redDotsToSplit)].sort((a, b) => b - a);
-    for (let i = 0; i < uniqueRedDotsToSplit.length; i++) {
-        const index = uniqueRedDotsToSplit[i];
+    // Split red dots that have reached 20 collisions and passed the 1 in 5 chance (process in reverse order to avoid index issues)
+    const uniqueRedDotsToSplitCollision = [...new Set(redDotsToSplitCollision)].sort((a, b) => b - a);
+    for (let i = 0; i < uniqueRedDotsToSplitCollision.length; i++) {
+        const index = uniqueRedDotsToSplitCollision[i];
         if (index >= 0 && index < redDots.length) {
             const totalCollisions = redDots[index].blueCollisionCount + redDots[index].greenCollisionCount;
-            if (totalCollisions >= 50) {
+            if (totalCollisions >= 20) {
                 splitRedDot(index);
                 // After splitting, indices may have shifted, so we need to recalculate removal indices
                 // For now, we'll handle removals by checking positions directly after splitting
@@ -517,26 +709,66 @@ function animate() {
                     radius: CONFIG.dotRadius / 2, // Match regular red dot size
                     blueCollisionCount: 0,
                     greenCollisionCount: 0,
-                    trail: []
+                    trail: [],
+                    fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+                    cloudFadeAmount: 1.0 // Fade amount when in clouds (1.0 = fully visible, 0.0 = deleted)
                 };
                 redDots.push(newRedDot);
             }
         }
     }
     
-    // Remove red dots that passed through clouds
-    // Check positions directly since indices may have changed after splitting
-    const uniqueRedDotsToRemove = [...new Set(redDotsToRemove)];
-    for (let i = redDots.length - 1; i >= 0; i--) {
-        // Check if this red dot is inside any cloud
-        for (let j = 0; j < clouds.length; j++) {
-            const cloud = clouds[j];
-            const dx = redDots[i].x - cloud.x;
-            const dy = redDots[i].y - cloud.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < cloud.radius) {
-                redDots.splice(i, 1);
-                break; // Remove once, then check next dot
+    // Check for red dots that exited clouds (have fade < 1.0 but are not currently in a cloud)
+    // If they have fade > 0, split them into two mini-reds
+    for (let i = 0; i < redDots.length; i++) {
+        const miniRadius = CONFIG.dotRadius / 4;
+        // Skip mini-reds
+        if (redDots[i].radius === miniRadius) {
+            continue;
+        }
+        
+        // Initialize cloudFadeAmount if not present
+        if (redDots[i].cloudFadeAmount === undefined) {
+            redDots[i].cloudFadeAmount = 1.0;
+        }
+        
+        // Check if this red dot has faded (cloudFadeAmount < 1.0) but is not currently in a cloud
+        // This means it exited a cloud with fade remaining
+        if (redDots[i].cloudFadeAmount < 1.0 && !redDotsInCloud.has(i)) {
+            // Red dot exited cloud with fade remaining - split into two mini-reds
+            if (redDots[i].cloudFadeAmount > 0 && !redDotsToSplit.includes(i)) {
+                redDotsToSplit.push(i);
+            }
+        }
+        
+        // Reset fade amount if not in cloud and hasn't been marked for splitting
+        // (so it can fade again if it re-enters)
+        if (!redDotsInCloud.has(i) && !redDotsToSplit.includes(i) && redDots[i].cloudFadeAmount < 1.0) {
+            redDots[i].cloudFadeAmount = 1.0;
+        }
+    }
+    
+    // Split red dots that exited clouds with fade > 0 (process in reverse order to avoid index issues)
+    const uniqueRedDotsToSplit = [...new Set(redDotsToSplit)].sort((a, b) => b - a);
+    for (let i = 0; i < uniqueRedDotsToSplit.length; i++) {
+        const index = uniqueRedDotsToSplit[i];
+        if (index >= 0 && index < redDots.length) {
+            const miniRadius = CONFIG.dotRadius / 4;
+            if (redDots[index].radius !== miniRadius && redDots[index].cloudFadeAmount > 0) {
+                splitRedDot(index);
+            }
+        }
+    }
+    
+    // Remove red dots that faded to 0 in clouds (process in reverse order to avoid index issues)
+    const uniqueRedDotsToRemove = [...new Set(redDotsToRemove)].sort((a, b) => b - a);
+    for (let i = 0; i < uniqueRedDotsToRemove.length; i++) {
+        const index = uniqueRedDotsToRemove[i];
+        if (index >= 0 && index < redDots.length) {
+            const miniRadius = CONFIG.dotRadius / 4;
+            // Only remove regular reds that have faded to 0
+            if (redDots[index].radius !== miniRadius && redDots[index].cloudFadeAmount <= 0) {
+                redDots.splice(index, 1);
             }
         }
     }
@@ -545,7 +777,9 @@ function animate() {
     if (redDots.length === 1 && clouds.length > 0) {
         // Remove one cloud
         clouds.splice(0, 1); // Remove the first cloud
-        playWoodblockClap(); // Play woodblock clap when cloud disappears
+        if (typeof playWoodblockClap === 'function') {
+            playWoodblockClap();
+        }
         
         // Create two new red dots at random positions
         redDots.push(initializeRedDot());
@@ -556,6 +790,157 @@ function animate() {
     if (redDots.length >= 1000) {
         resetSimulation();
         return; // Exit early since we reset
+    }
+    
+    // Update antigravity timers
+    if (blueAntigravityActive) {
+        blueAntigravityTimeRemaining -= deltaTime;
+        if (blueAntigravityTimeRemaining <= 0) {
+            blueAntigravityActive = false;
+            blueAntigravityTimeRemaining = 0;
+        } else {
+            // Play windchime sound periodically while antigravity is active
+            if (currentTime - lastBlueWindchimeTime >= windchimeInterval) {
+                if (typeof playWindchime === 'function') {
+                    playWindchime();
+                }
+                lastBlueWindchimeTime = currentTime;
+            }
+        }
+    }
+    
+    // Update green dots antigravity timers
+    for (let i = 0; i < greenDots.length; i++) {
+        if (greenDots[i].antigravityActive) {
+            greenDots[i].antigravityTimeRemaining -= deltaTime;
+            if (greenDots[i].antigravityTimeRemaining <= 0) {
+                greenDots[i].antigravityActive = false;
+                greenDots[i].antigravityTimeRemaining = 0;
+            } else {
+                // Play windchime sound periodically while antigravity is active
+                if (currentTime - greenDots[i].lastWindchimeTime >= windchimeInterval) {
+                    if (typeof playWindchime === 'function') {
+                        playWindchime();
+                    }
+                    greenDots[i].lastWindchimeTime = currentTime;
+                }
+            }
+        }
+    }
+    
+    // Update yellow crescents: decay and dissolve
+    const yellowCrescentsToTransform = [];
+    for (let i = yellowCrescents.length - 1; i >= 0; i--) {
+        const yellow = yellowCrescents[i];
+        
+        // Update fade-in time
+        if (yellow.fadeInTime !== undefined) {
+            yellow.fadeInTime += deltaTime;
+            if (yellow.fadeInTime > 1.0) {
+                yellow.fadeInTime = 1.0; // Clamp at max
+            }
+        }
+        
+        // Update decay time (radioactive decay over 10 seconds)
+        if (yellow.decayTime !== undefined) {
+            yellow.decayTime += deltaTime;
+            
+            // If decay completes and not yet dissolving, start dissolve
+            if (yellow.decayTime >= 10.0 && (yellow.dissolveTime === undefined || yellow.dissolveTime === -1)) {
+                yellow.dissolveTime = 0;
+                // Randomly choose transform type: 10% blue, 90% red
+                yellow.transformType = Math.random() < 0.1 ? 'blue' : 'red';
+            }
+            
+            // Update dissolve time if dissolving
+            if (yellow.dissolveTime !== undefined && yellow.dissolveTime >= 0 && yellow.dissolveTime < 0.5) {
+                yellow.dissolveTime += deltaTime;
+                
+                // If dissolve completes, mark for transformation
+                if (yellow.dissolveTime >= 0.5) {
+                    yellowCrescentsToTransform.push(i);
+                }
+            }
+        }
+    }
+    
+    // Transform yellow crescents that completed dissolve
+    for (let i = 0; i < yellowCrescentsToTransform.length; i++) {
+        const index = yellowCrescentsToTransform[i];
+        if (index >= 0 && index < yellowCrescents.length) {
+            const yellow = yellowCrescents[index];
+            
+            if (yellow.transformType === 'blue') {
+                // Transform to blue dot - update both global state and state object
+                blueDotX = yellow.x;
+                blueDotY = yellow.y;
+                blueVx = yellow.vx;
+                blueVy = yellow.vy;
+                blueDotFadeInTime = 0; // Reset fade-in for new blue dot
+                // Also update blueDotState for this frame
+                blueDotState.x = yellow.x;
+                blueDotState.y = yellow.y;
+                blueDotState.vx = yellow.vx;
+                blueDotState.vy = yellow.vy;
+            } else if (yellow.transformType === 'red') {
+                // Transform to red dot
+                const newRed = initializeRedDot();
+                newRed.x = yellow.x;
+                newRed.y = yellow.y;
+                newRed.vx = yellow.vx;
+                newRed.vy = yellow.vy;
+                redDots.push(newRed);
+            }
+            
+            // Remove the yellow crescent
+            yellowCrescents.splice(index, 1);
+        }
+    }
+    
+    // Update fade-in times for all objects
+    const fadeInDuration = 1.0; // 1.0 seconds to fully fade in (2x the previous duration)
+    
+    for (let i = 0; i < redDots.length; i++) {
+        if (redDots[i].fadeInTime !== undefined) {
+            redDots[i].fadeInTime += deltaTime;
+            if (redDots[i].fadeInTime > fadeInDuration) {
+                redDots[i].fadeInTime = fadeInDuration; // Clamp at max
+            }
+        }
+    }
+    
+    if (blueDotFadeInTime !== undefined) {
+        blueDotFadeInTime += deltaTime;
+        if (blueDotFadeInTime > fadeInDuration) {
+            blueDotFadeInTime = fadeInDuration; // Clamp at max
+        }
+    }
+    
+    for (let i = 0; i < greenDots.length; i++) {
+        if (greenDots[i].fadeInTime !== undefined) {
+            greenDots[i].fadeInTime += deltaTime;
+            if (greenDots[i].fadeInTime > fadeInDuration) {
+                greenDots[i].fadeInTime = fadeInDuration; // Clamp at max
+            }
+        }
+    }
+    
+    for (let i = 0; i < yellowCrescents.length; i++) {
+        if (yellowCrescents[i].fadeInTime !== undefined) {
+            yellowCrescents[i].fadeInTime += deltaTime;
+            if (yellowCrescents[i].fadeInTime > fadeInDuration) {
+                yellowCrescents[i].fadeInTime = fadeInDuration; // Clamp at max
+            }
+        }
+    }
+    
+    for (let i = 0; i < clouds.length; i++) {
+        if (clouds[i].fadeInTime !== undefined) {
+            clouds[i].fadeInTime += deltaTime;
+            if (clouds[i].fadeInTime > fadeInDuration) {
+                clouds[i].fadeInTime = fadeInDuration; // Clamp at max
+            }
+        }
     }
     
     // Add current positions to trails
@@ -581,13 +966,31 @@ function animate() {
         blueTrail.shift();
     }
     
+    // Automatic title cycling
+    const elapsedTime = (Date.now() - startTime) / 1000;
+    if (!autoTitleCyclingStarted && elapsedTime >= 15.0) {
+        autoTitleCyclingStarted = true;
+        lastAutoTitleChangeTime = currentTime;
+        updateTitle(true); // Start automatic cycling
+    }
+    if (autoTitleCyclingStarted && (currentTime - lastAutoTitleChangeTime) >= 10.0) {
+        lastAutoTitleChangeTime = currentTime;
+        updateTitle(true); // Continue automatic cycling
+    }
+    
+    // Update background choral and pink noise
+    if (typeof updateBackgroundChoral === 'function') {
+        updateBackgroundChoral(deltaTime);
+    }
+    
     // Draw
     drawSquare(); // Draws black background and border
     drawStars(); // Draw stars on black background
     
     // Draw all clouds (draw before objects so they appear behind)
     for (let i = 0; i < clouds.length; i++) {
-        drawCloud(clouds[i].x, clouds[i].y, clouds[i].radius, clouds[i].puffs);
+        const cloudOpacity = clouds[i].fadeInTime !== undefined ? Math.min(clouds[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
+        drawCloud(clouds[i].x, clouds[i].y, clouds[i].radius, clouds[i].puffs, cloudOpacity);
     }
     
     // Draw all red dot trails
@@ -604,14 +1007,57 @@ function animate() {
     
     // Draw all red dots (using individual radii for mini-reds)
     for (let i = 0; i < redDots.length; i++) {
-        drawDot(redDots[i].x, redDots[i].y, redDots[i].radius);
+        const redOpacity = redDots[i].fadeInTime !== undefined ? Math.min(redDots[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
+        drawDot(redDots[i].x, redDots[i].y, redDots[i].radius, redOpacity);
+        // Draw collision count
+        const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
+        if (totalCollisions > 0) {
+            drawCollisionCount(redDots[i].x, redDots[i].y, totalCollisions, redOpacity);
+        }
     }
     
-    drawBlueDot(blueDotState.x, blueDotState.y, blueAntigravityActive, blueAntigravityTimeRemaining);
+    const blueOpacity = blueDotFadeInTime !== undefined ? Math.min(blueDotFadeInTime / fadeInDuration, 1.0) : 1.0;
+    drawBlueDot(blueDotState.x, blueDotState.y, blueAntigravityActive, blueAntigravityTimeRemaining, blueOpacity);
+    // Draw collision count for blue dot
+    if (blueGreenAntigravityCount > 0) {
+        drawCollisionCount(blueDotState.x, blueDotState.y, blueGreenAntigravityCount, blueOpacity);
+    }
     
     // Draw all green dots
     for (let i = 0; i < greenDots.length; i++) {
-        drawGreenDot(greenDots[i].x, greenDots[i].y, greenDots[i].antigravityActive, greenDots[i].antigravityTimeRemaining);
+        const greenOpacity = greenDots[i].fadeInTime !== undefined ? Math.min(greenDots[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
+        drawGreenDot(greenDots[i].x, greenDots[i].y, greenDots[i].antigravityActive, greenDots[i].antigravityTimeRemaining, greenOpacity);
+        // Draw collision count
+        const totalCollisions = greenDots[i].blueCollisionCount + greenDots[i].greenCollisionCount;
+        if (totalCollisions > 0) {
+            drawCollisionCount(greenDots[i].x, greenDots[i].y, totalCollisions, greenOpacity);
+        }
+    }
+    
+    // Draw all yellow crescents (with dissolve transition if decaying)
+    for (let i = 0; i < yellowCrescents.length; i++) {
+        const yellow = yellowCrescents[i];
+        const fadeInOpacity = yellow.fadeInTime !== undefined ? Math.min(yellow.fadeInTime / fadeInDuration, 1.0) : 1.0;
+        
+        // Check if dissolving
+        if (yellow.dissolveTime !== undefined && yellow.dissolveTime >= 0 && yellow.dissolveTime < 0.5) {
+            const dissolveProgress = yellow.dissolveTime / 0.5; // 0 to 1
+            const yellowOpacity = fadeInOpacity * (1.0 - dissolveProgress); // Fade out
+            const newObjectOpacity = fadeInOpacity * dissolveProgress; // Fade in
+            
+            // Draw yellow crescent fading out
+            drawYellowCrescent(yellow.x, yellow.y, yellowOpacity);
+            
+            // Draw new object fading in
+            if (yellow.transformType === 'blue') {
+                drawBlueDot(yellow.x, yellow.y, false, 0, newObjectOpacity);
+            } else if (yellow.transformType === 'red') {
+                drawDot(yellow.x, yellow.y, CONFIG.dotRadius / 2, newObjectOpacity);
+            }
+        } else {
+            // Normal drawing (not dissolving)
+            drawYellowCrescent(yellow.x, yellow.y, fadeInOpacity);
+        }
     }
     
     requestAnimationFrame(animate);

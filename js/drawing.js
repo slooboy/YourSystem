@@ -57,11 +57,13 @@ function drawTrail(trailArray, color) {
     ctx.restore();
 }
 
-function drawDot(x, y, radius) {
+function drawDot(x, y, radius, opacity = 1.0) {
     // radius parameter allows drawing mini-reds with different sizes
     if (radius === undefined) {
         radius = CONFIG.dotRadius / 2; // Default: half size for regular red dots
     }
+    ctx.save();
+    ctx.globalAlpha = opacity;
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -72,11 +74,13 @@ function drawDot(x, y, radius) {
     ctx.beginPath();
     ctx.arc(x - radius * 0.4, y - radius * 0.4, radius * 0.4, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 }
 
-function drawBlueDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0) {
+function drawBlueDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0, opacity = 1.0) {
     // Draw Saturn-like planet with rings seen at an angle
     ctx.save();
+    ctx.globalAlpha = opacity;
     
     const planetRadius = CONFIG.dotRadius;
     const ringWidth = planetRadius * 0.15; // Thickness of the rings
@@ -137,9 +141,10 @@ function drawBlueDot(x, y, antigravityActive = false, antigravityTimeRemaining =
     ctx.restore();
 }
 
-function drawGreenDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0) {
+function drawGreenDot(x, y, antigravityActive = false, antigravityTimeRemaining = 0, opacity = 1.0) {
     // Draw 5-pointed star (twice as large)
     ctx.save();
+    ctx.globalAlpha = opacity;
     
     // Determine color based on antigravity state
     // Flash between orange and green in last 0.5 seconds (rapidly)
@@ -182,9 +187,10 @@ function drawGreenDot(x, y, antigravityActive = false, antigravityTimeRemaining 
     ctx.restore();
 }
 
-function drawCloud(x, y, radius, puffs) {
+function drawCloud(x, y, radius, puffs, opacity = 1.0) {
     // Draw an ethereal, cloud-like shape using multiple overlapping circles
     ctx.save();
+    ctx.globalAlpha = opacity;
     
     // Use composite operation to blend overlapping shapes
     ctx.globalCompositeOperation = 'source-over';
@@ -209,6 +215,19 @@ function drawCloud(x, y, radius, puffs) {
     ctx.restore();
 }
 
+// Draw collision count text next to an object
+function drawCollisionCount(x, y, count, opacity = 1.0) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // Position text slightly above and to the right of the object
+    ctx.fillText(count.toString(), x + 12, y - 12);
+    ctx.restore();
+}
+
 // Generate random stars
 function generateStars() {
     stars.length = 0; // Clear existing stars
@@ -224,4 +243,36 @@ function generateStars() {
             opacity: 0.3 + Math.random() * 0.7 // opacity between 0.3 and 1.0
         });
     }
+}
+
+function drawYellowCrescent(x, y, opacity = 1.0) {
+    // Draw a yellow crescent moon shape
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    
+    const radius = CONFIG.dotRadius * 1.5;
+    
+    // Draw crescent by drawing a full circle and then a smaller circle to create the crescent shape
+    ctx.fillStyle = '#FFD700'; // Gold/yellow color
+    
+    // Draw the main circle (full moon)
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw a smaller circle offset to create the crescent shape
+    // This creates the "shadow" that makes it look like a crescent
+    ctx.fillStyle = '#000'; // Black to create the cutout
+    ctx.beginPath();
+    ctx.arc(x + radius * 0.6, y, radius * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Redraw the main circle outline to make it look cleaner
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.restore();
 }

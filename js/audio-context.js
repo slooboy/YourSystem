@@ -1,73 +1,71 @@
-// Audio context initialization and management
+// Audio context initialization and master volume control
 
 let audioContext = null;
-let audioInitialized = false;
 let masterGainNode = null;
 
-// Make audioContext accessible globally for debugging
-window.audioContext = () => audioContext;
-
-// Initialize audio context (must be called after user interaction)
+// Initialize audio context (call on user interaction)
 function initAudio() {
-    if (audioInitialized && audioContext && audioContext.state === 'running') return;
+    if (audioContext) return; // Already initialized
     
     try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Create master gain node for volume control
-            masterGainNode = audioContext.createGain();
-            masterGainNode.connect(audioContext.destination);
-            updateMasterVolume(); // Set initial volume
-        }
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGainNode = audioContext.createGain();
+        masterGainNode.connect(audioContext.destination);
+        updateMasterVolume();
         
-        // Resume audio context if it's suspended (browsers often suspend on page load)
+        // Resume audio context if suspended (required for some browsers)
         if (audioContext.state === 'suspended') {
             audioContext.resume().then(() => {
-                console.log('Audio context resumed');
-                audioInitialized = true;
-            }).catch(err => {
-                console.warn('Failed to resume audio context:', err);
+                if (typeof startPinkNoise === 'function') {
+                    startPinkNoise();
+                }
             });
         } else {
-            audioInitialized = true;
+            if (typeof startPinkNoise === 'function') {
+                startPinkNoise();
+            }
         }
-    } catch (e) {
-        console.warn('Web Audio API not supported:', e);
+    } catch (error) {
+        console.error('Error initializing audio context:', error);
     }
 }
 
-// Update master volume based on audioVolume setting (0-10)
-function updateMasterVolume() {
-    if (masterGainNode) {
-        // Convert 0-10 scale to 0.0-1.0 gain (0 = off, 1-10 = 0.1 to 1.0)
-        const gainValue = audioVolume === 0 ? 0 : audioVolume / 10;
-        masterGainNode.gain.setValueAtTime(gainValue, audioContext ? audioContext.currentTime : 0);
+// Ensure audio is ready (call before playing sounds)
+function ensureAudioReady() {
+    if (!audioContext) {
+        initAudio();
     }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    return audioContext !== null;
 }
 
-// Get the audio destination (master gain node if available, otherwise direct destination)
+// Get audio destination (master gain node or direct destination)
 function getAudioDestination() {
     if (masterGainNode) {
         return masterGainNode;
     }
-    // Fallback to direct destination if master gain not initialized yet
-    return audioContext ? audioContext.destination : null;
+    if (audioContext) {
+        return audioContext.destination;
+    }
+    return null;
 }
 
-// Helper function to ensure audio context is ready before playing sounds
-function ensureAudioReady() {
-    if (audioVolume === 0) return false; // Audio is off
-    
-    if (!audioContext) {
-        initAudio();
-        return false; // Try to initialize, but skip this sound
+// Update master volume based on audioVolume setting
+function updateMasterVolume() {
+    if (masterGainNode) {
+        // Convert 0-11 scale to 0.0-1.0 gain (0 = off, 1-11 = 0.09 to 1.0)
+        const gainValue = audioVolume === 0 ? 0 : audioVolume / 11;
+        masterGainNode.gain.setValueAtTime(gainValue, audioContext ? audioContext.currentTime : 0);
     }
-    
-    // Ensure audio context is running
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
+    // Also update pink noise volume
+    if (typeof updatePinkNoiseVolume === 'function') {
+        updatePinkNoiseVolume();
     }
-    
-    return audioContext.state === 'running';
 }
+
+// Initialize audio on first user interaction
+document.addEventListener('click', initAudio, { once: true });
+document.addEventListener('keydown', initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
