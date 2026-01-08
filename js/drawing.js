@@ -205,6 +205,27 @@ function drawGreenDot(x, y, antigravityActive = false, antigravityTimeRemaining 
     ctx.restore();
 }
 
+function drawStarName(x, y, name, opacity = 1.0, objectRadius = null) {
+    // Draw star name in small italics to the bottom right of the object
+    if (!ctx) return;
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#ffffff'; // White text
+    ctx.font = 'italic 10px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // Position text just a couple pixels away from the object edge
+    // If objectRadius is provided, use it; otherwise default to green star size
+    const radius = objectRadius !== null ? objectRadius : (CONFIG.dotRadius * 2);
+    const offsetX = radius + 2; // Just 2 pixels to the right of the object edge
+    const offsetY = radius + 2; // Just 2 pixels below the object edge
+    ctx.fillText(name, x + offsetX, y + offsetY);
+    
+    ctx.restore();
+}
+
 function drawCloud(x, y, radius, puffs, opacity = 1.0) {
     // Draw an ethereal, cloud-like shape using multiple overlapping circles
     ctx.save();
@@ -429,6 +450,28 @@ function drawComet(x, y, angle, opacity = 1.0) {
     ctx.beginPath();
     ctx.arc(0, 0, headRadius, 0, Math.PI * 2);
     ctx.fill();
+    
+    ctx.restore();
+}
+
+function drawSpeedText(x, y, vx, vy, opacity = 1.0) {
+    // Draw speed (sqrt(vx^2 + vy^2)) next to an object
+    if (!ctx) return;
+    
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    const speedText = speed.toFixed(1) + ' px/s';
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#ffffff'; // White text
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // Position text slightly to the right and above the object
+    const offsetX = 15;
+    const offsetY = -15;
+    ctx.fillText(speedText, x + offsetX, y + offsetY);
     
     ctx.restore();
 }

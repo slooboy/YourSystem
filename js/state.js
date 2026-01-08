@@ -73,6 +73,7 @@ const stars = []; // array to store star positions and opacities
 let blueDotX, blueDotY; // current position
 let blueVx, blueVy; // velocity
 let blueDotFadeInTime = 0; // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+let blueDotName = ''; // Name of the blue dot
 
 // Blue-green collision counter (for generating clouds)
 let blueGreenCollisionCount = 0;

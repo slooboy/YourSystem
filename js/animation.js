@@ -145,7 +145,9 @@ function animate() {
     for (let i = 0; i < cometStates.length; i++) {
         // Comets with red dots
         for (let j = 0; j < redDotStates.length; j++) {
-            applyGravitationalForce(cometStates[i], redDotStates[j], comets[i].mass, redDots[j].mass, deltaTime);
+            // Check if this red dot has antigravity from this comet (within 100px)
+            const redDotAntigravity = redDots[j].parentCometIndex === i && redDots[j].antigravityActive;
+            applyGravitationalForce(cometStates[i], redDotStates[j], comets[i].mass, redDots[j].mass, deltaTime, false, redDotAntigravity);
         }
         // Comets with blue dot
         applyGravitationalForce(cometStates[i], blueDotState, comets[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
@@ -190,63 +192,14 @@ function animate() {
         }
     }
     
-    // Floor gravity: floor has mass of 1 red, positioned at center of bottom edge
-    const minX = rectangleX + CONFIG.margin;
-    const maxX = rectangleX + rectangleWidth - CONFIG.margin;
-    const maxY = rectangleY + rectangleHeight - CONFIG.margin;
-    const floorX = (minX + maxX) / 2; // Center of floor
-    const floorY = maxY; // Bottom edge
-    const floorState = { x: floorX, y: floorY, vx: 0, vy: 0 }; // Floor doesn't move
-    const floorMass = CONFIG.redMass; // Floor mass = 1 red
-    
-    // Floor with red dots
-    for (let i = 0; i < redDotStates.length; i++) {
-        applyGravitationalForce(floorState, redDotStates[i], floorMass, redDots[i].mass, deltaTime);
-    }
-    
-    // Floor with blue dot
-    applyGravitationalForce(floorState, blueDotState, floorMass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
-    
-    // Floor with green dots
-    for (let i = 0; i < greenDotStates.length; i++) {
-        applyGravitationalForce(floorState, greenDotStates[i], floorMass, greenMass, deltaTime, false, greenDots[i].antigravityActive);
-    }
-    
-    // Floor with yellow crescents
-    for (let i = 0; i < yellowCrescentStates.length; i++) {
-        applyGravitationalForce(floorState, yellowCrescentStates[i], floorMass, yellowCrescents[i].mass, deltaTime);
-    }
-    
-    // Floor with orange crescents
-    for (let i = 0; i < orangeCrescentStates.length; i++) {
-        applyGravitationalForce(floorState, orangeCrescentStates[i], floorMass, orangeCrescents[i].mass, deltaTime);
-    }
-    
-    // Floor with earth
-    if (earthState && earth) {
-        applyGravitationalForce(floorState, earthState, floorMass, earth.mass, deltaTime);
-    }
-    
-    // Floor with clouds
-    for (let i = 0; i < clouds.length; i++) {
-        const cloud = clouds[i];
-        const cloudState = { x: cloud.x, y: cloud.y, vx: 0, vy: 0 };
-        applyGravitationalForce(floorState, cloudState, floorMass, cloud.mass, deltaTime);
-    }
-    
-    // Floor with comets
-    for (let i = 0; i < cometStates.length; i++) {
-        applyGravitationalForce(floorState, cometStates[i], floorMass, comets[i].mass, deltaTime);
-    }
-    
     // Update all red dots positions (using the state objects that have accumulated gravitational forces)
     // Track new red dots to create (to avoid modifying array during iteration)
     const newRedDotsToCreate = [];
     for (let i = 0; i < redDotStates.length; i++) {
         const result = updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 250px/s
-        capVelocity(redDotStates[i], 250);
+        // Cap speed at 20px/s
+        capVelocity(redDotStates[i], 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(redDotStates[i], deltaTime);
@@ -270,8 +223,8 @@ function animate() {
     // Update blue dot position using physics (same gravity for all)
     const blueResult = updateDotPosition(blueDotState, CONFIG.gravity, deltaTime);
     
-    // Cap speed at 150px/s
-    capVelocity(blueDotState, 150);
+    // Cap speed at 20px/s
+    capVelocity(blueDotState, 20);
     
     // Gradually slow down if moving faster than 30px/s
     graduallySlowDown(blueDotState, deltaTime);
@@ -285,8 +238,8 @@ function animate() {
     for (let i = 0; i < greenDotStates.length; i++) {
         const result = updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 250px/s
-        capVelocity(greenDotStates[i], 250);
+        // Cap speed at 20px/s
+        capVelocity(greenDotStates[i], 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(greenDotStates[i], deltaTime);
@@ -301,8 +254,8 @@ function animate() {
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         const result = updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 150px/s
-        capVelocity(yellowCrescentStates[i], 150);
+        // Cap speed at 20px/s
+        capVelocity(yellowCrescentStates[i], 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(yellowCrescentStates[i], deltaTime);
@@ -317,8 +270,8 @@ function animate() {
     for (let i = 0; i < orangeCrescentStates.length; i++) {
         const result = updateDotPosition(orangeCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 150px/s
-        capVelocity(orangeCrescentStates[i], 150);
+        // Cap speed at 20px/s
+        capVelocity(orangeCrescentStates[i], 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(orangeCrescentStates[i], deltaTime);
@@ -333,8 +286,8 @@ function animate() {
     if (earthState && earth) {
         const earthResult = updateDotPosition(earthState, CONFIG.gravity, deltaTime);
         
-        // Cap speed at 150px/s
-        capVelocity(earthState, 150);
+        // Cap speed at 20px/s
+        capVelocity(earthState, 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(earthState, deltaTime);
@@ -360,6 +313,9 @@ function animate() {
         // Update position
         cometStates[i].x += cometStates[i].vx * deltaTime;
         cometStates[i].y += cometStates[i].vy * deltaTime;
+        
+        // Cap speed at 20px/s
+        capVelocity(cometStates[i], 20);
         
         // Gradually slow down if moving faster than 30px/s
         graduallySlowDown(cometStates[i], deltaTime);
@@ -425,11 +381,44 @@ function animate() {
         }
     }
     
+    // Update antigravity status for red dots created by comets
+    // Check distance from parent comet - antigravity active if within 100px
+    for (let i = 0; i < redDots.length; i++) {
+        if (redDots[i].parentCometIndex !== undefined) {
+            const cometIndex = redDots[i].parentCometIndex;
+            // Check if comet still exists
+            if (cometIndex >= 0 && cometIndex < comets.length) {
+                const dx = redDots[i].x - comets[cometIndex].x;
+                const dy = redDots[i].y - comets[cometIndex].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Antigravity active if within 100px
+                redDots[i].antigravityActive = distance < 100;
+            } else {
+                // Comet no longer exists, disable antigravity
+                redDots[i].antigravityActive = false;
+            }
+        }
+    }
+    
     // Remove comets that hit edges (process in reverse order to avoid index issues)
     for (let i = cometsToRemove.length - 1; i >= 0; i--) {
         const index = cometsToRemove[i];
         if (index >= 0 && index < comets.length) {
+            // Disable antigravity for all red dots that were created by this comet
+            for (let j = 0; j < redDots.length; j++) {
+                if (redDots[j].parentCometIndex === index) {
+                    redDots[j].antigravityActive = false;
+                    // Optionally remove the parentCometIndex reference, or keep it for tracking
+                }
+            }
             comets.splice(index, 1);
+            // Update parentCometIndex for red dots that reference comets after the removed one
+            for (let j = 0; j < redDots.length; j++) {
+                if (redDots[j].parentCometIndex !== undefined && redDots[j].parentCometIndex > index) {
+                    redDots[j].parentCometIndex--; // Decrement index since comet was removed
+                }
+            }
         }
     }
     
@@ -557,17 +546,6 @@ function animate() {
                     }
                     yellowCrescents.push(newYellow);
                     
-                    // Create two new red dots at cloud position
-                    const redDot1 = initializeRedDot();
-                    redDot1.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
-                    redDot1.y = cloud.y + (Math.random() - 0.5) * 20;
-                    redDots.push(redDot1);
-                    
-                    const redDot2 = initializeRedDot();
-                    redDot2.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
-                    redDot2.y = cloud.y + (Math.random() - 0.5) * 20;
-                    redDots.push(redDot2);
-                    
                     // Change cloud shape and acquire mass instead of removing
                     changeCloudShapeAndMass(cloud);
                     if (typeof playWoodblockClap === 'function') {
@@ -652,17 +630,6 @@ function animate() {
                         }
                         yellowCrescents.push(newYellow);
                         
-                        // Create two new red dots at cloud position
-                        const redDot1 = initializeRedDot();
-                        redDot1.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
-                        redDot1.y = cloud.y + (Math.random() - 0.5) * 20;
-                        redDots.push(redDot1);
-                        
-                        const redDot2 = initializeRedDot();
-                        redDot2.x = cloud.x + (Math.random() - 0.5) * 20; // Slight offset
-                        redDot2.y = cloud.y + (Math.random() - 0.5) * 20;
-                        redDots.push(redDot2);
-                        
                         // Change cloud shape and acquire mass instead of removing
                         changeCloudShapeAndMass(cloud);
                         if (typeof playWoodblockClap === 'function') {
@@ -689,7 +656,7 @@ function animate() {
         
         // Earth with red dots
         for (let i = 0; i < redDotStates.length; i++) {
-            if (checkDotCollision(earthState, redDotStates[i], earth.mass, redDots[i].mass, earthRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(earthState, redDotStates[i], earth.mass, redDots[i].mass, earthRadius, 0.5)) {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
@@ -786,7 +753,7 @@ function animate() {
     // Note: Red-red collisions do NOT count toward splitting
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = i + 1; j < redDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, 0.5, 0.5)) {
                 // Play guitar D pluck sound for red-red collision
                 if (typeof playGuitarDPluck === 'function') {
                     playGuitarDPluck();
@@ -839,7 +806,7 @@ function animate() {
     // These collisions count toward splitting
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, 0.5, CONFIG.collisionRadius)) {
                 // Play violin pizzicato high E sound for red-green collision
                 if (typeof playViolinPizzicatoHighE === 'function') {
                     playViolinPizzicatoHighE();
@@ -999,7 +966,7 @@ function animate() {
     // Yellow crescents with red dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < redDotStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, CONFIG.collisionRadius, 0.5)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
@@ -1763,11 +1730,23 @@ function animate() {
     // blueDotState is defined in physics section, but recreate here for drawing scope
     const blueDotStateForDrawing = { x: blueDotX, y: blueDotY, vx: blueVx, vy: blueVy };
     drawBlueDot(blueDotStateForDrawing.x, blueDotStateForDrawing.y, blueAntigravityActive, blueAntigravityTimeRemaining, blueOpacity);
+    // Draw blue dot name
+    if (blueDotName) {
+        // Blue dot has rings extending to ringOuterRadius = CONFIG.dotRadius * 1.8, use that as the radius
+        const blueDotRadius = CONFIG.dotRadius * 1.8;
+        drawStarName(blueDotStateForDrawing.x, blueDotStateForDrawing.y, blueDotName, blueOpacity, blueDotRadius);
+    }
     
     // Draw all green dots
     for (let i = 0; i < greenDots.length; i++) {
         const greenOpacity = greenDots[i].fadeInTime !== undefined ? Math.min(greenDots[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
         drawGreenDot(greenDots[i].x, greenDots[i].y, greenDots[i].antigravityActive, greenDots[i].antigravityTimeRemaining, greenOpacity);
+        // Draw star name
+        if (greenDots[i].name) {
+            // Green stars have outerRadius = CONFIG.dotRadius * 2
+            const greenStarRadius = CONFIG.dotRadius * 2;
+            drawStarName(greenDots[i].x, greenDots[i].y, greenDots[i].name, greenOpacity, greenStarRadius);
+        }
     }
     
     // Draw all yellow crescents (with dissolve transition if decaying)

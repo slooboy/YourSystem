@@ -14,13 +14,26 @@ body {
     display: flex;
     flex-direction: column;
 }
+.title-container {
+    height: 100px; /* Fixed height for two lines */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 20px;
+    margin: 0;
+    padding: 0 20px;
     flex-shrink: 0;
     transition: opacity 0.5s ease-in-out;
-    line-height: 1.2;
+    line-height: 1.4;
+    max-width: 100%;
+    word-wrap: break-word;
+    white-space: normal; /* Allow wrapping to two lines */
 }
 canvas {
     border: 2px solid #333;

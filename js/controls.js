@@ -4,7 +4,7 @@ const gravityControl = document.getElementById('gravityControl');
 const gravityValue = document.getElementById('gravityValue');
 const audioVolumeControl = document.getElementById('audioVolumeControl');
 const audioVolumeValue = document.getElementById('audioVolumeValue');
-const resetButton = document.getElementById('resetButton');
+const resetButton = document.getElementById('Button');
 
 // Klingon translations for control labels
 const klingonLabels = {

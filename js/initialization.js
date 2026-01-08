@@ -110,6 +110,78 @@ function initializeBlueDot() {
     
     // Reset fade-in time
     blueDotFadeInTime = 0;
+    
+    // Generate a name for the blue dot
+    blueDotName = generateBlueDotName();
+}
+
+// Generate a star name with consonant-vowel pattern
+// Average length 5, min 3, max 8
+function generateStarName() {
+    const consonants = 'bcdfghjklmnpqrstvwxyz';
+    const vowels = 'aeiou';
+    
+    // Generate length: weighted toward 5, but between 3 and 8
+    // Use a triangular distribution centered at 5
+    let length;
+    const rand = Math.random();
+    if (rand < 0.4) {
+        // 40% chance: length 4-6 (centered around 5)
+        length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
+    } else if (rand < 0.7) {
+        // 30% chance: length 3 or 7
+        length = Math.random() < 0.5 ? 3 : 7;
+    } else {
+        // 30% chance: length 8
+        length = 8;
+    }
+    
+    // Ensure within bounds
+    length = Math.max(3, Math.min(8, length));
+    
+    // Generate name with consonant-vowel pattern
+    let name = '';
+    for (let i = 0; i < length; i++) {
+        if (i % 2 === 0) {
+            // Even indices: consonants
+            name += consonants[Math.floor(Math.random() * consonants.length)];
+        } else {
+            // Odd indices: vowels
+            name += vowels[Math.floor(Math.random() * vowels.length)];
+        }
+    }
+    
+    // Capitalize first letter
+    return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// Generate a blue dot name with vowel-consonant-accented-vowel pattern
+// Length 2 to 6 letters
+function generateBlueDotName() {
+    const vowels = 'aeiou';
+    const consonants = 'bcdfghjklmnpqrstvwxyz';
+    const accentedVowels = 'áéíóú';
+    
+    // Generate length: 2 to 6 letters
+    const length = Math.floor(Math.random() * 5) + 2; // 2, 3, 4, 5, or 6
+    
+    // Generate name with pattern: vowel consonant accented-vowel ...
+    let name = '';
+    for (let i = 0; i < length; i++) {
+        if (i % 3 === 0) {
+            // Every 3rd position starting at 0: vowel
+            name += vowels[Math.floor(Math.random() * vowels.length)];
+        } else if (i % 3 === 1) {
+            // Every 3rd position starting at 1: consonant
+            name += consonants[Math.floor(Math.random() * consonants.length)];
+        } else {
+            // Every 3rd position starting at 2: accented vowel
+            name += accentedVowels[Math.floor(Math.random() * accentedVowels.length)];
+        }
+    }
+    
+    // Capitalize first letter
+    return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function initializeGreenDot() {
@@ -141,7 +213,8 @@ function initializeGreenDot() {
         lastWindchimeTime: 0, // Track last windchime play time for antigravity sound
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         antigravityTextTime: -1, // Time remaining for antigravity text display (-1 = not showing, 1.5 = showing, counts down to 0)
-        wasInCloud: false // Track if green dot was in cloud last frame (to only apply momentum change on entry)
+        wasInCloud: false, // Track if green dot was in cloud last frame (to only apply momentum change on entry)
+        name: generateStarName() // Generate a unique name for this star
     };
 }
 
@@ -251,7 +324,7 @@ function initializeEarth() {
         y: y,
         vx: vx,
         vy: vy,
-        mass: CONFIG.redMass * 5, // Mass of 5 reds
+        mass: CONFIG.redMass * 50, // Mass of 50 reds (increased by factor of 10)
         radius: CONFIG.dotRadius * 1.0, // Same size as orange crescent
         fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
     };
@@ -306,7 +379,7 @@ function initializeComet() {
         y: y,
         vx: vx,
         vy: vy,
-        mass: CONFIG.redMass, // Mass of 1 red
+        mass: 0, // Comets have zero mass
         radius: CONFIG.dotRadius * 0.75, // Slightly smaller than red dot
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         lastRedDotTime: 0, // Time since last red dot was created
@@ -620,21 +693,25 @@ const languageOrder = [
     'ancientGreek', 'arabic', 'farsi', 'tamil', 'frenchBraille'
 ];
 
-// Function to adjust title font size to fit on one line
+// Function to adjust title font size to fit on two lines
 function adjustTitleFontSize(titleElement) {
     titleElement.style.fontSize = ''; // Reset to default
-    titleElement.style.whiteSpace = 'nowrap';
-    titleElement.style.lineHeight = '1.2'; // Keep line height constant
+    titleElement.style.whiteSpace = 'normal'; // Allow wrapping
+    titleElement.style.lineHeight = '1.4'; // Line height for two lines
     const computedStyle = window.getComputedStyle(titleElement);
     let fontSize = parseFloat(computedStyle.fontSize);
     const minFontSize = 12;
-    const containerWidth = titleElement.parentElement.clientWidth - 40;
-    let textWidth = titleElement.scrollWidth;
-    while (textWidth > containerWidth && fontSize > minFontSize) {
+    const containerWidth = titleElement.parentElement.clientWidth - 40; // Account for padding
+    const maxHeight = 100; // Maximum height for two lines (title-container height)
+    
+    // Check if text fits in two lines, reduce font size if needed
+    titleElement.style.fontSize = fontSize + 'px';
+    let textHeight = titleElement.scrollHeight;
+    
+    while (textHeight > maxHeight && fontSize > minFontSize) {
         fontSize -= 1;
         titleElement.style.fontSize = fontSize + 'px';
-        titleElement.style.lineHeight = '1.2'; // Keep line height constant
-        textWidth = titleElement.scrollWidth; // Recalculate after change
+        textHeight = titleElement.scrollHeight; // Recalculate after change
     }
 }
 

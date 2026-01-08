@@ -16,8 +16,8 @@ const CONFIG = {
     
     // Mass properties (affects collisions and gravitational attraction)
     redMass: 1, // base mass
-    blueMass: 4, // 4x red dot's mass
-    initialGreenMass: 8, // 8x red dot's mass - adjustable via slider
+    blueMass: 40, // 40x red dot's mass (increased by factor of 10)
+    initialGreenMass: 80, // 80x red dot's mass (increased by factor of 10) - adjustable via slider
     yellowCrescentMass: 2, // 2x red dot's mass
     
     // Trail properties
@@ -30,5 +30,5 @@ const CONFIG = {
     numStars: 100,
     
     // Collision detection
-    collisionRadius: 1 // Fixed collision radius (2px diameter) for all objects regardless of visual size
+    collisionRadius: 3 // Fixed collision radius for all objects regardless of visual size
 };

@@ -54,6 +54,9 @@ function updateDotPosition(dotState, dotGravity, deltaTime) {
 }
 
 function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime, dot1Antigravity = false, dot2Antigravity = false) {
+    // Skip gravitational interaction if either object has zero mass
+    if (mass1 === 0 || mass2 === 0) return;
+    
     // Calculate distance and direction between objects
     const dx = dot2State.x - dot1State.x;
     const dy = dot2State.y - dot1State.y;
@@ -64,7 +67,8 @@ function applyGravitationalForce(dot1State, dot2State, mass1, mass2, deltaTime, 
     if (distance < 1) return;
     
     // Calculate gravitational force magnitude: F = G * m1 * m2 / r^2
-    const forceMagnitude = G * mass1 * mass2 / distanceSquared;
+    let forceMagnitude = G * mass1 * mass2 / distanceSquared;
+        
     
     // Calculate unit vector from dot1 to dot2
     const nx = dx / distance;
@@ -154,8 +158,8 @@ function reduceVelocityIfTooFast(dotState) {
     }
 }
 
-// Function to cap velocity at maximum speed (150px/s)
-function capVelocity(dotState, maxSpeed = 150) {
+// Function to cap velocity at maximum speed (20px/s)
+function capVelocity(dotState, maxSpeed = 20) {
     const speed = Math.sqrt(dotState.vx * dotState.vx + dotState.vy * dotState.vy);
     if (speed > maxSpeed && speed > 0) {
         const scale = maxSpeed / speed;

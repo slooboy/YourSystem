@@ -7,11 +7,11 @@ function resizeCanvas() {
     canvas.width = window.innerWidth - containerPadding;
     
     // Calculate available height for canvas (window height minus title, controls, and padding)
-    const title = document.querySelector('h1');
+    const titleContainer = document.querySelector('.title-container');
     const info = document.querySelector('.info');
     
-    // Get actual heights, with fallback estimates
-    const titleHeight = title && title.offsetHeight > 0 ? title.offsetHeight : 60;
+    // Use fixed title height (100px for two lines) plus margin-bottom (20px) = 120px total
+    const titleHeight = 120; // Fixed height: 100px container + 20px margin-bottom
     let infoHeight = 200; // Conservative estimate for controls
     if (info && info.offsetHeight > 0) {
         infoHeight = info.offsetHeight + 20; // Add extra margin
