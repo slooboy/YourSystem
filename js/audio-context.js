@@ -31,14 +31,18 @@ function initAudio() {
 }
 
 // Ensure audio is ready (call before playing sounds)
+// Note: This will only resume existing audio context, not create one.
+// Audio context creation requires user interaction and is handled by initAudio().
 function ensureAudioReady() {
-    if (!audioContext) {
-        initAudio();
-    }
+    // Don't try to create audio context here - it requires user interaction
+    // Just resume if it already exists and is suspended
     if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch(err => {
+            // Silently fail - audio will work after user interaction
+            console.log('Audio context resume failed (user interaction required):', err);
+        });
     }
-    return audioContext !== null;
+    return audioContext !== null && audioContext.state === 'running';
 }
 
 // Get audio destination (master gain node or direct destination)

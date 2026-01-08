@@ -1,30 +1,48 @@
 // Drawing functions
 
 function drawSquare() {
-    // Fill rectangle with black background (extended to include border area)
-    // Since strokeRect draws border centered on edges, extend by wallThickness/2 on each side
-    ctx.fillStyle = '#000';
-    ctx.fillRect(
-        rectangleX - CONFIG.wallThickness / 2, 
-        rectangleY - CONFIG.wallThickness / 2, 
-        rectangleWidth + CONFIG.wallThickness, 
-        rectangleHeight + CONFIG.wallThickness
-    );
+    // Check if context is ready
+    if (!ctx) {
+        console.log('drawSquare: ctx is null');
+        return;
+    }
     
-    // Draw rectangle border
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = CONFIG.wallThickness;
-    ctx.strokeRect(rectangleX, rectangleY, rectangleWidth, rectangleHeight);
+    try {
+        // Fill rectangle with black background (extended to include border area)
+        // Since strokeRect draws border centered on edges, extend by wallThickness/2 on each side
+        ctx.fillStyle = '#000';
+        ctx.fillRect(
+            rectangleX - CONFIG.wallThickness / 2, 
+            rectangleY - CONFIG.wallThickness / 2, 
+            rectangleWidth + CONFIG.wallThickness, 
+            rectangleHeight + CONFIG.wallThickness
+        );
+        
+        // Draw rectangle border
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = CONFIG.wallThickness;
+        ctx.strokeRect(rectangleX, rectangleY, rectangleWidth, rectangleHeight);
+    } catch (e) {
+        console.error('Error in drawSquare:', e);
+    }
 }
 
 function drawStars() {
-    ctx.save();
-    for (let i = 0; i < stars.length; i++) {
-        const star = stars[i];
-        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
-        ctx.fillRect(Math.floor(star.x), Math.floor(star.y), 1, 1);
+    if (!ctx) {
+        console.log('drawStars: ctx is null');
+        return;
     }
-    ctx.restore();
+    try {
+        ctx.save();
+        for (let i = 0; i < stars.length; i++) {
+            const star = stars[i];
+            ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+            ctx.fillRect(Math.floor(star.x), Math.floor(star.y), 1, 1);
+        }
+        ctx.restore();
+    } catch (e) {
+        console.error('Error in drawStars:', e);
+    }
 }
 
 function drawTrail(trailArray, color) {
@@ -228,9 +246,35 @@ function drawCollisionCount(x, y, count, opacity = 1.0) {
     ctx.restore();
 }
 
+// Draw velocity text next to an object
+function drawVelocityText(x, y, vx, vy, opacity = 1.0) {
+    if (!ctx) return;
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 10px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // Calculate speed
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    
+    // Position text slightly above and to the right of the object
+    const text = `(${vx.toFixed(1)}, ${vy.toFixed(1)})`;
+    ctx.fillText(text, x + 12, y - 12);
+    ctx.restore();
+}
+
 // Generate random stars
 function generateStars() {
     stars.length = 0; // Clear existing stars
+    // Don't generate stars if canvas dimensions are invalid
+    if (rectangleWidth <= 0 || rectangleHeight <= 0) {
+        console.log('generateStars: Invalid dimensions', rectangleWidth, rectangleHeight);
+        return;
+    }
+    console.log('generateStars: Generating stars with dimensions', rectangleWidth, rectangleHeight);
     const minX = rectangleX;
     const maxX = rectangleX + rectangleWidth;
     const minY = rectangleY;
@@ -277,12 +321,60 @@ function drawYellowCrescent(x, y, opacity = 1.0) {
     ctx.restore();
 }
 
+function drawEarth(x, y, opacity = 1.0) {
+    // Draw Earth as a deep blue sphere with milky-white patches
+    if (!ctx) return;
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    
+    const radius = CONFIG.dotRadius * 1.0; // Same size as orange crescent
+    
+    // Draw base sphere in deep blue
+    ctx.fillStyle = '#1a237e'; // Deep blue
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add milky-white patches (clouds/continents)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; // Milky white with transparency
+    
+    // Patch 1 - upper left
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.3, y - radius * 0.4, radius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Patch 2 - center right
+    ctx.beginPath();
+    ctx.arc(x + radius * 0.4, y, radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Patch 3 - lower left
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.2, y + radius * 0.5, radius * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Patch 4 - upper right
+    ctx.beginPath();
+    ctx.arc(x + radius * 0.3, y - radius * 0.3, radius * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add subtle outline
+    ctx.strokeStyle = '#0d47a1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
 function drawOrangeCrescent(x, y, opacity = 1.0) {
     // Draw an orange crescent moon shape (similar to yellow crescent but orange)
     ctx.save();
     ctx.globalAlpha = opacity;
     
-    const radius = CONFIG.dotRadius * 1.5;
+    const radius = CONFIG.dotRadius * 1.0; // Reduced by 1/3 (was 1.5, now 1.0)
     
     // Draw crescent by drawing a full circle and then a smaller circle to create the crescent shape
     ctx.fillStyle = '#FF8C00'; // Orange color

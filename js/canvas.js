@@ -36,9 +36,16 @@ function resizeCanvas() {
 // Initial resize - wait for DOM to be ready
 function initializeCanvas() {
     resizeCanvas();
+    // Ensure context is initialized after canvas is resized
+    if (typeof ensureContext === 'function') {
+        ensureContext();
+    }
     // Resize again after a short delay to ensure accurate measurements
     setTimeout(() => {
         resizeCanvas();
+        if (typeof ensureContext === 'function') {
+            ensureContext();
+        }
         if (typeof generateStars === 'function') {
             generateStars();
         }

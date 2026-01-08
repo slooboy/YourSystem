@@ -481,6 +481,47 @@ function playTomtomBump() {
     }
 }
 
+// Boing sound for earth collisions - random pitch within C3-C6 range
+function playBoing() {
+    if (!ensureAudioReady()) return;
+    
+    try {
+        const now = audioContext.currentTime;
+        
+        // Random frequency within C3-C6 range (130.81 - 1046.50 Hz)
+        // Use logarithmic distribution for more musical randomness
+        const minFreq = 130.81; // C3
+        const maxFreq = 1046.50; // C6
+        const minLog = Math.log2(minFreq);
+        const maxLog = Math.log2(maxFreq);
+        const randomLog = minLog + Math.random() * (maxLog - minLog);
+        const freq = Math.pow(2, randomLog);
+        
+        // Create boing sound with multiple oscillators for richer tone
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        const destination = getAudioDestination();
+        if (destination) gainNode.connect(destination);
+        
+        // Use sine wave for clean boing sound
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, now);
+        
+        // Envelope: quick attack, medium decay with slight sustain (boing bounce)
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01); // Quick attack
+        gainNode.gain.exponentialRampToValueAtTime(0.15, now + 0.05); // Initial decay
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // Longer tail for boing
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.2);
+    } catch (error) {
+        console.error('Error playing boing sound:', error);
+    }
+}
+
 // Background choral system state
 let backgroundChoralState = 'resting'; // 'playing', 'fading', 'resting'
 let backgroundChoralNextNoteTime = 0;

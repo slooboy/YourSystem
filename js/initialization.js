@@ -15,6 +15,9 @@ function initializeRedDot() {
     const vy = 0;
     
     // Return red dot object with position, velocity, mass, radius, collision counts, and trail
+    // Decay time: exponential distribution with mean 10 seconds
+    const decayTime = -10 * Math.log(Math.random()); // Exponential decay with average 10 seconds
+    
     return {
         x: x,
         y: y,
@@ -26,7 +29,9 @@ function initializeRedDot() {
         greenCollisionCount: 0, // Track collisions with green dots
         trail: [],
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
-        cloudFadeAmount: 1.0 // Fade amount when in clouds (1.0 = fully visible, 0.0 = deleted)
+        cloudFadeAmount: 1.0, // Fade amount when in clouds (1.0 = fully visible, 0.0 = deleted)
+        decayTime: 0, // Time since creation (will decay to minired when reaches decayTimeThreshold)
+        decayTimeThreshold: decayTime // Random decay threshold (exponential distribution, mean 10s)
     };
 }
 
@@ -43,6 +48,9 @@ function splitRedDot(index) {
     const angle1 = Math.random() * Math.PI * 2; // Random direction for first mini-red
     const angle2 = angle1 + Math.PI; // Opposite direction for second mini-red
     
+    // Decay time for minireds: half-life of 10 seconds
+    const miniredDecayTime = -10 * Math.log(Math.random()); // Exponential decay with half-life 10 seconds
+    
     const miniRed1 = {
         x: parentDot.x + Math.cos(angle1) * offset,
         y: parentDot.y + Math.sin(angle1) * offset,
@@ -53,7 +61,9 @@ function splitRedDot(index) {
         blueCollisionCount: 0, // Reset collision counts
         greenCollisionCount: 0,
         trail: [],
-        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        decayTime: 0, // Time since creation (half-life decay, 0 to decayTimeThreshold)
+        decayTimeThreshold: miniredDecayTime // Random decay threshold (exponential distribution, half-life 10s)
         // Note: mini-reds don't have cloudFadeAmount - they're exempt from cloud effects
     };
     
@@ -67,7 +77,9 @@ function splitRedDot(index) {
         blueCollisionCount: 0, // Reset collision counts
         greenCollisionCount: 0,
         trail: [],
-        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        decayTime: 0, // Time since creation (half-life decay, 0 to decayTimeThreshold)
+        decayTimeThreshold: -10 * Math.log(Math.random()) // Random decay threshold for second minired
         // Note: mini-reds don't have cloudFadeAmount - they're exempt from cloud effects
     };
     
@@ -127,7 +139,9 @@ function initializeGreenDot() {
         antigravityTimeRemaining: 0,
         cloudTime: 0, // Track time spent in clouds (for antigravity activation)
         lastWindchimeTime: 0, // Track last windchime play time for antigravity sound
-        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        antigravityTextTime: -1, // Time remaining for antigravity text display (-1 = not showing, 1.5 = showing, counts down to 0)
+        wasInCloud: false // Track if green dot was in cloud last frame (to only apply momentum change on entry)
     };
 }
 
@@ -220,6 +234,29 @@ function initializeYellowCrescent(x, y) {
     };
 }
 
+function initializeEarth() {
+    const minX = rectangleX + CONFIG.margin;
+    const maxX = rectangleX + rectangleWidth - CONFIG.margin;
+    const minY = rectangleY + CONFIG.margin;
+    const maxY = rectangleY + rectangleHeight - CONFIG.margin;
+    
+    const x = minX + Math.random() * (maxX - minX);
+    const y = minY + Math.random() * (maxY - minY);
+    
+    const vx = 0;
+    const vy = 0;
+    
+    return {
+        x: x,
+        y: y,
+        vx: vx,
+        vy: vy,
+        mass: CONFIG.redMass * 5, // Mass of 5 reds
+        radius: CONFIG.dotRadius * 1.0, // Same size as orange crescent
+        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+    };
+}
+
 function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
     // Create orange crescent at the specified position
     // Return orange crescent object with position, velocity, mass, and radius
@@ -228,9 +265,11 @@ function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
         y: y,
         vx: vx,
         vy: vy,
-        mass: CONFIG.yellowCrescentMass, // Same mass as yellow crescent
-        radius: CONFIG.dotRadius * 1.5, // Same size as yellow crescent
-        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        mass: 15, // Orange crescent mass = 15
+        radius: CONFIG.dotRadius * 1.0, // Reduced by 1/3 (was 1.5, now 1.0)
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        decayTime: 0, // Time since creation (radioactive decay, 0 to 5 seconds half-life)
+        fadeOutTime: -1 // Time remaining for fade-out (-1 = not fading, >= 0 = fading out)
     };
 }
 
@@ -259,7 +298,16 @@ const titleTranslations = {
     armenian: "Եթե Վիդեո Խաղերի Դիզայներն Էր Ստեղծել Արեգակնային Համակարգը",
     galician: "Se un Deseñador de Videoxogos Fixera o Sistema Solar",
     portuguese: "Se um Designer de Videogames Tivesse Feito o Sistema Solar",
-    irish: "Dá mBa Dhearadh Cluiche Físeáin a Rinne an Córas Gréine"
+    irish: "Dá mBa Dhearadh Cluiche Físeáin a Rinne an Córas Gréine",
+    zulu: "Uma Umklami Wevidiyo Game Wayenze Isistimu Yelanga",
+    afrikaans: "As 'n Videospeletjie-Ontwerper die Sonnestelsel Gemaak Het",
+    finnish: "Jos Videopelisuunnittelija Olisi Tehnyt Aurinkokunnan",
+    estonian: "Kui Videomängu Disainer Oleks Loonud Päikesesüsteemi",
+    ancientGreek: "Εἰ ὁ Βιδεοπαιγνίου Δημιουργὸς τὸν Ἠλιακὸν Σύστημα Ἐποίησεν",
+    arabic: "لو أن مصمم ألعاب فيديو صنع النظام الشمسي",
+    farsi: "اگر یک طراح بازی ویدیویی منظومه شمسی را ساخته بود",
+    tamil: "ஒரு வீடியோ கேம் வடிவமைப்பாளர் சூரிய மண்டலத்தை உருவாக்கியிருந்தால்",
+    frenchBraille: "Si un Concepteur de Jeux Vidéo Avait Créé le Système Solaire"
 };
 
 // Random quotations from Einstein, Newton, and David Bowie's 'Life on Mars'
@@ -511,7 +559,8 @@ const languageOrder = [
     'spanish', 'catalan', 'italian', 'german', 'czech', 'japanese', 'hindi',
     'simplifiedChinese', 'hawaiian', 'swedish', 'danish', 'icelandic', 'oldNorse',
     'walloon', 'basque', 'frisian', 'dutch', 'ukrainian', 'bulgarian', 'armenian',
-    'galician', 'portuguese', 'irish'
+    'galician', 'portuguese', 'irish', 'zulu', 'afrikaans', 'finnish', 'estonian',
+    'ancientGreek', 'arabic', 'farsi', 'tamil', 'frenchBraille'
 ];
 
 // Function to adjust title font size to fit on one line
@@ -637,12 +686,10 @@ function resetSimulation() {
     // Clear orange crescents
     orangeCrescents.length = 0;
     
-    // Clear comets
-    comets.length = 0;
+    // Reset earth
+    earth = null;
+    earthTrail.length = 0;
     
-    // Reset comet spawning
-    lastCometSpawnTime = 0;
-    nextCometSpawnInterval = 5 + Math.random() * 45;
     
     // Clear trails
     blueTrail.length = 0;
@@ -677,6 +724,9 @@ function resetSimulation() {
     
     // Reinitialize blue dot with random position
     initializeBlueDot();
+    
+    // Initialize earth at the start
+    earth = initializeEarth();
     
     // Initialize one cloud at the start
     clouds.push(initializeCloud());
