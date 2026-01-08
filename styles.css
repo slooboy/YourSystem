@@ -20,6 +20,7 @@ h1 {
     margin-bottom: 20px;
     flex-shrink: 0;
     transition: opacity 0.5s ease-in-out;
+    line-height: 1.2;
 }
 canvas {
     border: 2px solid #333;

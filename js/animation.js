@@ -375,6 +375,10 @@ function animate() {
                     playGuitarDPluck();
                 }
                 
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(redDotStates[i]);
+                reduceVelocityIfTooFast(redDotStates[j]);
+                
                 // Check if both are mini-reds (mini-reds have radius = CONFIG.dotRadius / 4)
                 const miniRadius = CONFIG.dotRadius / 4;
                 if (redDots[i].radius === miniRadius && redDots[j].radius === miniRadius) {
@@ -1009,29 +1013,15 @@ function animate() {
     for (let i = 0; i < redDots.length; i++) {
         const redOpacity = redDots[i].fadeInTime !== undefined ? Math.min(redDots[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
         drawDot(redDots[i].x, redDots[i].y, redDots[i].radius, redOpacity);
-        // Draw collision count
-        const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
-        if (totalCollisions > 0) {
-            drawCollisionCount(redDots[i].x, redDots[i].y, totalCollisions, redOpacity);
-        }
     }
     
     const blueOpacity = blueDotFadeInTime !== undefined ? Math.min(blueDotFadeInTime / fadeInDuration, 1.0) : 1.0;
     drawBlueDot(blueDotState.x, blueDotState.y, blueAntigravityActive, blueAntigravityTimeRemaining, blueOpacity);
-    // Draw collision count for blue dot
-    if (blueGreenAntigravityCount > 0) {
-        drawCollisionCount(blueDotState.x, blueDotState.y, blueGreenAntigravityCount, blueOpacity);
-    }
     
     // Draw all green dots
     for (let i = 0; i < greenDots.length; i++) {
         const greenOpacity = greenDots[i].fadeInTime !== undefined ? Math.min(greenDots[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
         drawGreenDot(greenDots[i].x, greenDots[i].y, greenDots[i].antigravityActive, greenDots[i].antigravityTimeRemaining, greenOpacity);
-        // Draw collision count
-        const totalCollisions = greenDots[i].blueCollisionCount + greenDots[i].greenCollisionCount;
-        if (totalCollisions > 0) {
-            drawCollisionCount(greenDots[i].x, greenDots[i].y, totalCollisions, greenOpacity);
-        }
     }
     
     // Draw all yellow crescents (with dissolve transition if decaying)

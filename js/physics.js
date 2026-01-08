@@ -138,3 +138,18 @@ function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2)
     }
     return false; // No collision
 }
+
+// Function to reduce velocity if object is moving too fast
+// If speed > 200px/s, reduce by 20px/s per collision until speed <= 100px/s
+function reduceVelocityIfTooFast(dotState) {
+    const speed = Math.sqrt(dotState.vx * dotState.vx + dotState.vy * dotState.vy);
+    if (speed > 200) {
+        // Reduce speed by 20px/s, but not below 100px/s
+        const targetSpeed = Math.max(100, speed - 20);
+        if (speed > 0) {
+            const scale = targetSpeed / speed;
+            dotState.vx *= scale;
+            dotState.vy *= scale;
+        }
+    }
+}

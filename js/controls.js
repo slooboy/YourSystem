@@ -4,11 +4,44 @@ const gravityControl = document.getElementById('gravityControl');
 const gravityValue = document.getElementById('gravityValue');
 const greenMassControl = document.getElementById('greenMassControl');
 const greenMassValue = document.getElementById('greenMassValue');
-const trailLengthControl = document.getElementById('trailLengthControl');
-const trailLengthValue = document.getElementById('trailLengthValue');
 const audioVolumeControl = document.getElementById('audioVolumeControl');
 const audioVolumeValue = document.getElementById('audioVolumeValue');
 const resetButton = document.getElementById('resetButton');
+
+// Klingon translations for control labels
+const klingonLabels = {
+    gravity: "qamDu' mej (G):",
+    greenMass: "SuD Hov ngI':",
+    audioVolume: "Qogh chuq:",
+    reset: "choH"
+};
+
+// English labels (default)
+const englishLabels = {
+    gravity: "Gravitational Constant (G):",
+    greenMass: "Green Star Mass:",
+    audioVolume: "Audio Volume:",
+    reset: "Reset"
+};
+
+// Function to set control labels in Klingon or English
+function setControlLabels(useKlingon) {
+    const labels = useKlingon ? klingonLabels : englishLabels;
+    
+    const gravityLabel = document.querySelector('label[for="gravityControl"]');
+    const greenMassLabel = document.querySelector('label[for="greenMassControl"]');
+    const audioVolumeLabel = document.querySelector('label[for="audioVolumeControl"]');
+    
+    if (gravityLabel) gravityLabel.textContent = labels.gravity;
+    if (greenMassLabel) greenMassLabel.textContent = labels.greenMass;
+    if (audioVolumeLabel) audioVolumeLabel.textContent = labels.audioVolume;
+    if (resetButton) resetButton.textContent = labels.reset;
+}
+
+// 1 in 10 chance to use Klingon labels
+if (Math.random() < 0.1) {
+    setControlLabels(true);
+}
 
 // Set up gravitational constant control
 gravityControl.addEventListener('input', function() {
@@ -20,12 +53,6 @@ gravityControl.addEventListener('input', function() {
 greenMassControl.addEventListener('input', function() {
     greenMass = parseFloat(this.value);
     greenMassValue.textContent = greenMass;
-});
-
-// Set up trail length control
-trailLengthControl.addEventListener('input', function() {
-    trailLength = parseFloat(this.value);
-    trailLengthValue.textContent = trailLength;
 });
 
 // Set up audio volume control

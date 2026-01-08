@@ -504,6 +504,7 @@ const languageOrder = [
 function adjustTitleFontSize(titleElement) {
     titleElement.style.fontSize = ''; // Reset to default
     titleElement.style.whiteSpace = 'nowrap';
+    titleElement.style.lineHeight = '1.2'; // Keep line height constant
     const computedStyle = window.getComputedStyle(titleElement);
     let fontSize = parseFloat(computedStyle.fontSize);
     const minFontSize = 12;
@@ -512,6 +513,7 @@ function adjustTitleFontSize(titleElement) {
     while (textWidth > containerWidth && fontSize > minFontSize) {
         fontSize -= 1;
         titleElement.style.fontSize = fontSize + 'px';
+        titleElement.style.lineHeight = '1.2'; // Keep line height constant
         textWidth = titleElement.scrollWidth; // Recalculate after change
     }
 }
