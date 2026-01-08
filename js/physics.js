@@ -140,12 +140,12 @@ function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2)
 }
 
 // Function to reduce velocity if object is moving too fast
-// If speed > 200px/s, reduce by 20% per collision until speed <= 100px/s
+// If speed > 200px/s, reduce by 20% per collision until speed <= 50px/s
 function reduceVelocityIfTooFast(dotState) {
     const speed = Math.sqrt(dotState.vx * dotState.vx + dotState.vy * dotState.vy);
     if (speed > 200) {
-        // Reduce speed by 20%, but not below 100px/s
-        const targetSpeed = Math.max(100, speed * 0.8); // 80% of current speed (20% reduction)
+        // Reduce speed by 20%, but not below 50px/s
+        const targetSpeed = Math.max(50, speed * 0.8); // 80% of current speed (20% reduction)
         if (speed > 0) {
             const scale = targetSpeed / speed;
             dotState.vx *= scale;
@@ -159,6 +159,20 @@ function capVelocity(dotState, maxSpeed = 150) {
     const speed = Math.sqrt(dotState.vx * dotState.vx + dotState.vy * dotState.vy);
     if (speed > maxSpeed && speed > 0) {
         const scale = maxSpeed / speed;
+        dotState.vx *= scale;
+        dotState.vy *= scale;
+    }
+}
+
+// Function to gradually slow down objects moving faster than 30px/s
+// Reduces speed by 10% each second until it reaches 30px/s
+function graduallySlowDown(dotState, deltaTime) {
+    const speed = Math.sqrt(dotState.vx * dotState.vx + dotState.vy * dotState.vy);
+    if (speed > 30 && speed > 0) {
+        // Reduce by 10% per second: multiply by (1 - 0.1 * deltaTime)
+        // But ensure it doesn't go below 30px/s
+        const newSpeed = Math.max(30, speed * (1 - 0.1 * deltaTime));
+        const scale = newSpeed / speed;
         dotState.vx *= scale;
         dotState.vy *= scale;
     }

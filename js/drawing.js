@@ -400,3 +400,35 @@ function drawOrangeCrescent(x, y, opacity = 1.0) {
     
     ctx.restore();
 }
+
+function drawComet(x, y, angle, opacity = 1.0) {
+    // Draw a tadpole-shaped comet (translucent pinkish grey)
+    // angle: direction the head should point (in radians)
+    if (!ctx) return;
+    
+    ctx.save();
+    ctx.globalAlpha = opacity * 0.6; // Translucent (60% opacity)
+    
+    // Tadpole shape: head (circle) + tail (elongated shape)
+    const headRadius = CONFIG.dotRadius * 0.75;
+    const tailLength = headRadius * 2.5;
+    const tailWidth = headRadius * 0.6;
+    
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    
+    // Draw tail first (so head appears on top)
+    ctx.fillStyle = 'rgba(200, 180, 200, 0.6)'; // Pinkish grey
+    ctx.beginPath();
+    // Tail is a teardrop shape pointing backward
+    ctx.ellipse(-headRadius * 0.3, 0, tailLength * 0.8, tailWidth, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw head (circle)
+    ctx.fillStyle = 'rgba(220, 200, 220, 0.7)'; // Slightly lighter pinkish grey for head
+    ctx.beginPath();
+    ctx.arc(0, 0, headRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+}

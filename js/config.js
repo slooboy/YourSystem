@@ -30,5 +30,5 @@ const CONFIG = {
     numStars: 100,
     
     // Collision detection
-    collisionRadius: 0.5 // Fixed collision radius (1px diameter) for all objects regardless of visual size
+    collisionRadius: 1 // Fixed collision radius (2px diameter) for all objects regardless of visual size
 };

@@ -29,6 +29,15 @@ function animate() {
     // Get current time for timing calculations
     const currentTime = (Date.now() - startTime) / 1000;
     
+    // Spontaneous comet generation (average every 120 seconds)
+    lastSpontaneousCometTime += deltaTime;
+    if (lastSpontaneousCometTime >= spontaneousCometInterval) {
+        comets.push(initializeComet());
+        lastSpontaneousCometTime = 0;
+        // Generate next interval (exponential distribution, average 24 seconds)
+        spontaneousCometInterval = -24 * Math.log(Math.random());
+    }
+    
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -38,6 +47,7 @@ function animate() {
     const greenDotStates = greenDots.map(dot => ({ x: dot.x, y: dot.y, vx: dot.vx, vy: dot.vy }));
     const yellowCrescentStates = yellowCrescents.map(crescent => ({ x: crescent.x, y: crescent.y, vx: crescent.vx, vy: crescent.vy }));
     const orangeCrescentStates = orangeCrescents.map(crescent => ({ x: crescent.x, y: crescent.y, vx: crescent.vx, vy: crescent.vy }));
+    const cometStates = comets.map(comet => ({ x: comet.x, y: comet.y, vx: comet.vx, vy: comet.vy }));
     
     // Earth state (single object)
     let earthState = null;
@@ -131,6 +141,38 @@ function animate() {
         }
     }
     
+    // Comets with all other objects
+    for (let i = 0; i < cometStates.length; i++) {
+        // Comets with red dots
+        for (let j = 0; j < redDotStates.length; j++) {
+            applyGravitationalForce(cometStates[i], redDotStates[j], comets[i].mass, redDots[j].mass, deltaTime);
+        }
+        // Comets with blue dot
+        applyGravitationalForce(cometStates[i], blueDotState, comets[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        // Comets with green dots
+        for (let j = 0; j < greenDotStates.length; j++) {
+            applyGravitationalForce(cometStates[i], greenDotStates[j], comets[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+        }
+        // Comets with yellow crescents
+        for (let j = 0; j < yellowCrescentStates.length; j++) {
+            applyGravitationalForce(cometStates[i], yellowCrescentStates[j], comets[i].mass, yellowCrescents[j].mass, deltaTime);
+        }
+        // Comets with orange crescents
+        for (let j = 0; j < orangeCrescentStates.length; j++) {
+            applyGravitationalForce(cometStates[i], orangeCrescentStates[j], comets[i].mass, orangeCrescents[j].mass, deltaTime);
+        }
+        // Comets with earth
+        if (earthState) {
+            applyGravitationalForce(cometStates[i], earthState, comets[i].mass, earth.mass, deltaTime);
+        }
+        // Comets with clouds
+        for (let j = 0; j < clouds.length; j++) {
+            const cloud = clouds[j];
+            const cloudState = { x: cloud.x, y: cloud.y, vx: 0, vy: 0 };
+            applyGravitationalForce(cometStates[i], cloudState, comets[i].mass, cloud.mass, deltaTime);
+        }
+    }
+    
     // Clouds with all other objects (clouds have individual mass, default 0.1x red mass)
     for (let i = 0; i < clouds.length; i++) {
         const cloud = clouds[i];
@@ -192,6 +234,11 @@ function animate() {
         applyGravitationalForce(floorState, cloudState, floorMass, cloud.mass, deltaTime);
     }
     
+    // Floor with comets
+    for (let i = 0; i < cometStates.length; i++) {
+        applyGravitationalForce(floorState, cometStates[i], floorMass, comets[i].mass, deltaTime);
+    }
+    
     // Update all red dots positions (using the state objects that have accumulated gravitational forces)
     // Track new red dots to create (to avoid modifying array during iteration)
     const newRedDotsToCreate = [];
@@ -200,6 +247,9 @@ function animate() {
         
         // Cap speed at 250px/s
         capVelocity(redDotStates[i], 250);
+        
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(redDotStates[i], deltaTime);
         
         // Apply speed limit after wall collision
         if (result.wallHit) {
@@ -223,6 +273,9 @@ function animate() {
     // Cap speed at 150px/s
     capVelocity(blueDotState, 150);
     
+    // Gradually slow down if moving faster than 30px/s
+    graduallySlowDown(blueDotState, deltaTime);
+    
     // Apply speed limit after wall collision
     if (blueResult.wallHit) {
         reduceVelocityIfTooFast(blueDotState);
@@ -234,6 +287,9 @@ function animate() {
         
         // Cap speed at 250px/s
         capVelocity(greenDotStates[i], 250);
+        
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(greenDotStates[i], deltaTime);
         
         // Apply speed limit after wall collision
         if (result.wallHit) {
@@ -248,6 +304,9 @@ function animate() {
         // Cap speed at 150px/s
         capVelocity(yellowCrescentStates[i], 150);
         
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(yellowCrescentStates[i], deltaTime);
+        
         // Apply speed limit after wall collision
         if (result.wallHit) {
             reduceVelocityIfTooFast(yellowCrescentStates[i]);
@@ -260,6 +319,9 @@ function animate() {
         
         // Cap speed at 150px/s
         capVelocity(orangeCrescentStates[i], 150);
+        
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(orangeCrescentStates[i], deltaTime);
         
         // Apply speed limit after wall collision
         if (result.wallHit) {
@@ -274,6 +336,9 @@ function animate() {
         // Cap speed at 150px/s
         capVelocity(earthState, 150);
         
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(earthState, deltaTime);
+        
         // Apply speed limit after wall collision
         if (earthResult.wallHit) {
             reduceVelocityIfTooFast(earthState);
@@ -284,6 +349,88 @@ function animate() {
         earth.y = earthState.y;
         earth.vx = earthState.vx;
         earth.vy = earthState.vy;
+    }
+    
+    // Update comet positions (comets don't bounce, they disappear on edge)
+    const cometsToRemove = [];
+    for (let i = 0; i < cometStates.length; i++) {
+        // Apply gravity
+        cometStates[i].vy += CONFIG.gravity * deltaTime;
+        
+        // Update position
+        cometStates[i].x += cometStates[i].vx * deltaTime;
+        cometStates[i].y += cometStates[i].vy * deltaTime;
+        
+        // Gradually slow down if moving faster than 30px/s
+        graduallySlowDown(cometStates[i], deltaTime);
+        
+        // Update time since last red dot creation
+        comets[i].lastRedDotTime += deltaTime;
+        
+        // Check if it's time to create a new red dot (average every 2 seconds)
+        if (comets[i].lastRedDotTime >= comets[i].nextRedDotInterval) {
+            // Calculate perpendicular direction to comet's velocity
+            const cometSpeed = Math.sqrt(cometStates[i].vx * cometStates[i].vx + cometStates[i].vy * cometStates[i].vy);
+            let perpX = 0;
+            let perpY = 0;
+            
+            if (cometSpeed > 0) {
+                // Normalize velocity to get direction
+                const dirX = cometStates[i].vx / cometSpeed;
+                const dirY = cometStates[i].vy / cometSpeed;
+                
+                // Perpendicular direction (rotate 90 degrees): (-dirY, dirX) or (dirY, -dirX)
+                // Randomly choose positive or negative
+                const sign = Math.random() < 0.5 ? -1 : 1;
+                perpX = -dirY * sign;
+                perpY = dirX * sign;
+            } else {
+                // If comet has no velocity, use random direction
+                const angle = Math.random() * Math.PI * 2;
+                perpX = Math.cos(angle);
+                perpY = Math.sin(angle);
+            }
+            
+            // Create new red dot at comet's position, offset slightly in perpendicular direction
+            // Offset by a small amount (e.g., 5 pixels) in the perpendicular direction
+            const offsetDistance = 5;
+            const newRedDot = initializeRedDot();
+            newRedDot.x = comets[i].x + perpX * offsetDistance;
+            newRedDot.y = comets[i].y + perpY * offsetDistance;
+            newRedDot.vx = 0; // Initial velocity of 0
+            newRedDot.vy = 0; // Initial velocity of 0
+            redDots.push(newRedDot);
+            
+            // Reset timer and generate next interval
+            comets[i].lastRedDotTime = 0;
+            comets[i].nextRedDotInterval = -2 * Math.log(Math.random()); // Exponential distribution, average 2 seconds
+        }
+        
+        // Check if comet has hit an edge (disappear instead of bouncing)
+        const minX = rectangleX;
+        const maxX = rectangleX + rectangleWidth;
+        const minY = rectangleY;
+        const maxY = rectangleY + rectangleHeight;
+        
+        if (cometStates[i].x <= minX || cometStates[i].x >= maxX || 
+            cometStates[i].y <= minY || cometStates[i].y >= maxY) {
+            // Comet hit edge - mark for removal
+            cometsToRemove.push(i);
+        } else {
+            // Update comet object from state
+            comets[i].x = cometStates[i].x;
+            comets[i].y = cometStates[i].y;
+            comets[i].vx = cometStates[i].vx;
+            comets[i].vy = cometStates[i].vy;
+        }
+    }
+    
+    // Remove comets that hit edges (process in reverse order to avoid index issues)
+    for (let i = cometsToRemove.length - 1; i >= 0; i--) {
+        const index = cometsToRemove[i];
+        if (index >= 0 && index < comets.length) {
+            comets.splice(index, 1);
+        }
     }
     
     // Apply cloud drag effect - objects passing through clouds lose half their momentum
@@ -358,10 +505,10 @@ function animate() {
                 blueDotState.vy *= 0.5;
             }
             
-            // Ensure minimum velocity of 20px/s
+            // Ensure minimum velocity of 0.5px/s
             const blueSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
-            if (blueSpeed > 0 && blueSpeed < 20) {
-                const scale = 20 / blueSpeed;
+            if (blueSpeed > 0 && blueSpeed < 0.5) {
+                const scale = 0.5 / blueSpeed;
                 blueDotState.vx *= scale;
                 blueDotState.vy *= scale;
             }
@@ -452,10 +599,10 @@ function animate() {
                         greenDotStates[j].vy *= 0.5;
                     }
                     
-                    // Ensure minimum velocity of 20px/s when entering
+                    // Ensure minimum velocity of 10px/s when entering
                     const greenSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
-                    if (greenSpeed > 0 && greenSpeed < 20) {
-                        const scale = 20 / greenSpeed;
+                    if (greenSpeed > 0 && greenSpeed < 10) {
+                        const scale = 10 / greenSpeed;
                         greenDotStates[j].vx *= scale;
                         greenDotStates[j].vy *= scale;
                     }
@@ -563,15 +710,15 @@ function animate() {
             
             // Ensure minimum velocity to prevent sticking (similar to cloud logic)
             const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
-            if (earthSpeed > 0 && earthSpeed < 20) {
-                const scale = 20 / earthSpeed;
+            if (earthSpeed > 0 && earthSpeed < 0.5) {
+                const scale = 0.5 / earthSpeed;
                 earthState.vx *= scale;
                 earthState.vy *= scale;
             }
             
             const blueSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
-            if (blueSpeed > 0 && blueSpeed < 20) {
-                const scale = 20 / blueSpeed;
+            if (blueSpeed > 0 && blueSpeed < 0.5) {
+                const scale = 0.5 / blueSpeed;
                 blueDotState.vx *= scale;
                 blueDotState.vy *= scale;
             }
@@ -591,15 +738,15 @@ function animate() {
                 
                 // Ensure minimum velocity to prevent sticking (similar to cloud logic)
                 const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
-                if (earthSpeed > 0 && earthSpeed < 20) {
-                    const scale = 20 / earthSpeed;
+                if (earthSpeed > 0 && earthSpeed < 0.5) {
+                    const scale = 0.5 / earthSpeed;
                     earthState.vx *= scale;
                     earthState.vy *= scale;
                 }
                 
                 const greenSpeed = Math.sqrt(greenDotStates[i].vx * greenDotStates[i].vx + greenDotStates[i].vy * greenDotStates[i].vy);
-                if (greenSpeed > 0 && greenSpeed < 20) {
-                    const scale = 20 / greenSpeed;
+                if (greenSpeed > 0 && greenSpeed < 0.5) {
+                    const scale = 0.5 / greenSpeed;
                     greenDotStates[i].vx *= scale;
                     greenDotStates[i].vy *= scale;
                 }
@@ -1458,15 +1605,25 @@ function animate() {
             if (orange.decayTime >= 5.0 && (orange.fadeOutTime === undefined || orange.fadeOutTime === -1)) {
                 orange.fadeOutTime = 1.0; // Fade out over 1 second
             }
+        }
+        
+        // Update fade-out time if fading
+        if (orange.fadeOutTime !== undefined && orange.fadeOutTime >= 0) {
+            orange.fadeOutTime -= deltaTime;
             
-            // Update fade-out time if fading
-            if (orange.fadeOutTime !== undefined && orange.fadeOutTime >= 0) {
-                orange.fadeOutTime -= deltaTime;
-                
-                // If fade-out completes, mark for removal
-                if (orange.fadeOutTime <= 0) {
-                    orangeCrescentsToRemove.push(i);
-                }
+            // If fade-out completes, mark for removal
+            if (orange.fadeOutTime <= 0) {
+                orangeCrescentsToRemove.push(i);
+            }
+        }
+    }
+    
+    // Update comet fade-in times
+    for (let i = 0; i < comets.length; i++) {
+        if (comets[i].fadeInTime !== undefined) {
+            comets[i].fadeInTime += deltaTime;
+            if (comets[i].fadeInTime > fadeInDuration) {
+                comets[i].fadeInTime = fadeInDuration; // Clamp at max
             }
         }
     }
@@ -1479,12 +1636,31 @@ function animate() {
         }
     }
     
+    // Update cloud fade-in and decay times
+    const cloudsToRemoveDecay = [];
     for (let i = 0; i < clouds.length; i++) {
         if (clouds[i].fadeInTime !== undefined) {
             clouds[i].fadeInTime += deltaTime;
             if (clouds[i].fadeInTime > fadeInDuration) {
                 clouds[i].fadeInTime = fadeInDuration; // Clamp at max
             }
+        }
+        
+        // Update decay time and check for half-life (30 seconds)
+        if (clouds[i].decayTime !== undefined) {
+            clouds[i].decayTime += deltaTime;
+            if (clouds[i].decayTime >= clouds[i].decayTimeThreshold) {
+                // Cloud has reached its half-life - mark for removal
+                cloudsToRemoveDecay.push(i);
+            }
+        }
+    }
+    
+    // Remove clouds that have decayed (process in reverse order to avoid index issues)
+    for (let i = cloudsToRemoveDecay.length - 1; i >= 0; i--) {
+        const index = cloudsToRemoveDecay[i];
+        if (index >= 0 && index < clouds.length) {
+            clouds.splice(index, 1);
         }
     }
     
@@ -1569,7 +1745,7 @@ function animate() {
     
     // Draw earth trail
     if (earth) {
-        drawTrail(earthTrail, 'rgba(26, 35, 126, 0.4)'); // earth trail (deep blue, translucent)
+        drawTrail(earthTrail, 'rgba(255, 255, 255, 0.6)'); // earth trail (milky white, translucent)
     }
     
     // Draw all green dot trails
@@ -1640,9 +1816,35 @@ function animate() {
     if (earth) {
         const earthFadeInOpacity = earth.fadeInTime !== undefined ? Math.min(earth.fadeInTime / fadeInDuration, 1.0) : 1.0;
         drawEarth(earth.x, earth.y, earthFadeInOpacity);
+    }
+    
+    // Draw all comets (head points toward nearest green star)
+    for (let i = 0; i < comets.length; i++) {
+        const cometOpacity = comets[i].fadeInTime !== undefined ? Math.min(comets[i].fadeInTime / fadeInDuration, 1.0) : 1.0;
         
-        // Draw velocity text for earth
-        drawVelocityText(earth.x, earth.y, earth.vx, earth.vy, earthFadeInOpacity);
+        // Find nearest green star
+        let nearestGreen = null;
+        let minDistance = Infinity;
+        for (let j = 0; j < greenDots.length; j++) {
+            const dx = greenDots[j].x - comets[i].x;
+            const dy = greenDots[j].y - comets[i].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestGreen = greenDots[j];
+            }
+        }
+        
+        // Calculate angle to nearest green star (or use velocity direction if no green stars)
+        let angle;
+        if (nearestGreen) {
+            angle = Math.atan2(nearestGreen.y - comets[i].y, nearestGreen.x - comets[i].x);
+        } else {
+            // Fallback to velocity direction if no green stars exist
+            angle = Math.atan2(comets[i].vy, comets[i].vx);
+        }
+        
+        drawComet(comets[i].x, comets[i].y, angle, cometOpacity);
     }
     
     // Update and draw "ANTIGRAVITY" text if showing

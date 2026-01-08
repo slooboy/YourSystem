@@ -257,6 +257,63 @@ function initializeEarth() {
     };
 }
 
+function initializeComet() {
+    // Create a comet that enters from any edge of the starfield
+    // Randomly choose which edge (0=top, 1=right, 2=bottom, 3=left)
+    const edge = Math.floor(Math.random() * 4);
+    
+    let x, y;
+    const speed = 20; // 20px/s initial velocity
+    let vx, vy;
+    
+    // Position on the chosen edge
+    if (edge === 0) {
+        // Top edge
+        x = rectangleX + Math.random() * rectangleWidth;
+        y = rectangleY;
+        // Random direction pointing inward (downward)
+        const angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI; // 0 to PI (pointing down)
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
+    } else if (edge === 1) {
+        // Right edge
+        x = rectangleX + rectangleWidth;
+        y = rectangleY + Math.random() * rectangleHeight;
+        // Random direction pointing inward (leftward)
+        const angle = Math.PI + (Math.random() - 0.5) * Math.PI; // PI/2 to 3PI/2 (pointing left)
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
+    } else if (edge === 2) {
+        // Bottom edge
+        x = rectangleX + Math.random() * rectangleWidth;
+        y = rectangleY + rectangleHeight;
+        // Random direction pointing inward (upward)
+        const angle = 3 * Math.PI / 2 + (Math.random() - 0.5) * Math.PI; // PI to 2PI (pointing up)
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
+    } else {
+        // Left edge
+        x = rectangleX;
+        y = rectangleY + Math.random() * rectangleHeight;
+        // Random direction pointing inward (rightward)
+        const angle = (Math.random() - 0.5) * Math.PI; // -PI/2 to PI/2 (pointing right)
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
+    }
+    
+    return {
+        x: x,
+        y: y,
+        vx: vx,
+        vy: vy,
+        mass: CONFIG.redMass, // Mass of 1 red
+        radius: CONFIG.dotRadius * 0.75, // Slightly smaller than red dot
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        lastRedDotTime: 0, // Time since last red dot was created
+        nextRedDotInterval: -2 * Math.log(Math.random()) // Exponential distribution, average 2 seconds
+    };
+}
+
 function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
     // Create orange crescent at the specified position
     // Return orange crescent object with position, velocity, mass, and radius
@@ -686,6 +743,9 @@ function resetSimulation() {
     // Clear orange crescents
     orangeCrescents.length = 0;
     
+    // Clear comets
+    comets.length = 0;
+    
     // Reset earth
     earth = null;
     earthTrail.length = 0;
@@ -730,6 +790,14 @@ function resetSimulation() {
     
     // Initialize one cloud at the start
     clouds.push(initializeCloud());
+    
+    // Reset spontaneous cloud generation timer
+    lastSpontaneousCloudTime = 0;
+    spontaneousCloudInterval = -20 * Math.log(Math.random()); // Exponential distribution, average 20 seconds
+    
+    // Reset spontaneous comet generation timer
+    lastSpontaneousCometTime = 0;
+    spontaneousCometInterval = -24 * Math.log(Math.random()); // Exponential distribution, average 24 seconds
     
     // Reset collision counts
     blueGreenCollisionCount = 0;

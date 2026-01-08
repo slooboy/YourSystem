@@ -40,13 +40,24 @@ const redDots = []; // Array of { x, y, vx, vy, mass, radius, blueCollisionCount
 const greenDots = []; // Array of { x, y, vx, vy, trail, blueCollisionCount, greenCollisionCount, antigravityActive, antigravityTimeRemaining, cloudTime, wasInCloud }
 
 // Clouds array - each cloud is an object with position, radius, shape data, and mass (clouds don't move)
-const clouds = []; // Array of { x, y, radius, puffs, mass, fadeInTime }
+const clouds = []; // Array of { x, y, radius, puffs, mass, fadeInTime, decayTime, decayTimeThreshold }
+
+// Spontaneous cloud generation timer
+let lastSpontaneousCloudTime = 0; // Time since last spontaneous cloud generation
+let spontaneousCloudInterval = -20 * Math.log(Math.random()); // Exponential distribution, average 20 seconds
+
+// Spontaneous comet generation timer
+let lastSpontaneousCometTime = 0; // Time since last spontaneous comet generation
+let spontaneousCometInterval = -24 * Math.log(Math.random()); // Exponential distribution, average 24 seconds
 
 // Yellow crescents array - each crescent is an object with position, velocity, mass, and radius
 const yellowCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime, decayTime, dissolveTime, transformType }
 
 // Orange crescents array - each crescent is an object with position, velocity, mass, and radius
 const orangeCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime, decayTime, fadeOutTime }
+
+// Comets array - each comet is an object with position, velocity, mass, and radius
+const comets = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime }
 
 // Earth object - single object that appears at the beginning
 let earth = null; // Object with { x, y, vx, vy, mass, radius, fadeInTime }
