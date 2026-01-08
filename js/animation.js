@@ -16,6 +16,13 @@ function animate() {
     // Get current time for timing calculations
     const currentTime = (Date.now() - startTime) / 1000;
     
+    // Spawn comets at random intervals (every 5-50 seconds)
+    if (currentTime - lastCometSpawnTime >= nextCometSpawnInterval) {
+        comets.push(initializeComet());
+        lastCometSpawnTime = currentTime;
+        nextCometSpawnInterval = 5 + Math.random() * 45; // Random interval between 5 and 50 seconds
+    }
+    
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -24,6 +31,8 @@ function animate() {
     const blueDotState = { x: blueDotX, y: blueDotY, vx: blueVx, vy: blueVy };
     const greenDotStates = greenDots.map(dot => ({ x: dot.x, y: dot.y, vx: dot.vx, vy: dot.vy }));
     const yellowCrescentStates = yellowCrescents.map(crescent => ({ x: crescent.x, y: crescent.y, vx: crescent.vx, vy: crescent.vy }));
+    const orangeCrescentStates = orangeCrescents.map(crescent => ({ x: crescent.x, y: crescent.y, vx: crescent.vx, vy: crescent.vy }));
+    const cometStates = comets.map(comet => ({ x: comet.x, y: comet.y, vx: comet.vx, vy: comet.vy }));
     
     // Apply gravitational forces between all pairs of objects
     // Red dots with each other (using individual masses)
@@ -100,11 +109,42 @@ function animate() {
         }
     }
     
+    // Comets with all other objects (comets have red mass)
+    for (let i = 0; i < cometStates.length; i++) {
+        // Comets with red dots
+        for (let j = 0; j < redDotStates.length; j++) {
+            applyGravitationalForce(cometStates[i], redDotStates[j], comets[i].mass, redDots[j].mass, deltaTime);
+        }
+        // Comets with blue dot
+        applyGravitationalForce(cometStates[i], blueDotState, comets[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        // Comets with green dots
+        for (let j = 0; j < greenDotStates.length; j++) {
+            applyGravitationalForce(cometStates[i], greenDotStates[j], comets[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+        }
+        // Comets with yellow crescents
+        for (let j = 0; j < yellowCrescentStates.length; j++) {
+            applyGravitationalForce(cometStates[i], yellowCrescentStates[j], comets[i].mass, yellowCrescents[j].mass, deltaTime);
+        }
+        // Comets with orange crescents
+        for (let j = 0; j < orangeCrescentStates.length; j++) {
+            applyGravitationalForce(cometStates[i], orangeCrescentStates[j], comets[i].mass, orangeCrescents[j].mass, deltaTime);
+        }
+        // Comets with other comets
+        for (let j = i + 1; j < cometStates.length; j++) {
+            applyGravitationalForce(cometStates[i], cometStates[j], comets[i].mass, comets[j].mass, deltaTime);
+        }
+    }
+    
     // Update all red dots positions (using the state objects that have accumulated gravitational forces)
     // Track new red dots to create (to avoid modifying array during iteration)
     const newRedDotsToCreate = [];
     for (let i = 0; i < redDotStates.length; i++) {
         const result = updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
+        
+        // Apply speed limit after wall collision
+        if (result.wallHit) {
+            reduceVelocityIfTooFast(redDotStates[i]);
+        }
         
         // New rule: if there are only 2 red dots and one hits a wall, create a new red dot
         if (result.wallHit && redDots.length === 2) {
@@ -118,16 +158,41 @@ function animate() {
     }
     
     // Update blue dot position using physics (same gravity for all)
-    updateDotPosition(blueDotState, CONFIG.gravity, deltaTime);
+    const blueResult = updateDotPosition(blueDotState, CONFIG.gravity, deltaTime);
+    
+    // Apply speed limit after wall collision
+    if (blueResult.wallHit) {
+        reduceVelocityIfTooFast(blueDotState);
+    }
     
     // Update all green dots positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < greenDotStates.length; i++) {
-        updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
+        const result = updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
+        
+        // Apply speed limit after wall collision
+        if (result.wallHit) {
+            reduceVelocityIfTooFast(greenDotStates[i]);
+        }
     }
     
     // Update all yellow crescents positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < yellowCrescentStates.length; i++) {
-        updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
+        const result = updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
+        
+        // Apply speed limit after wall collision
+        if (result.wallHit) {
+            reduceVelocityIfTooFast(yellowCrescentStates[i]);
+        }
+    }
+    
+    // Update all orange crescents positions (using the state objects that have accumulated gravitational forces)
+    for (let i = 0; i < orangeCrescentStates.length; i++) {
+        const result = updateDotPosition(orangeCrescentStates[i], CONFIG.gravity, deltaTime);
+        
+        // Apply speed limit after wall collision
+        if (result.wallHit) {
+            reduceVelocityIfTooFast(orangeCrescentStates[i]);
+        }
     }
     
     // Apply cloud drag effect - objects passing through clouds lose half their momentum
@@ -219,6 +284,12 @@ function animate() {
                 blueAntigravityTimeRemaining = 3.0; // 3 seconds
                 blueCloudTime = 0; // Reset cloud time
                 
+                // Show "ANTIGRAVITY" text if this is the first time
+                if (!antigravityTextShown) {
+                    antigravityTextShown = true;
+                    antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
+                }
+                
                 // Ensure blue dot has at least 50px/s velocity when entering antigravity
                 const currentSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
                 if (currentSpeed < 50) {
@@ -305,6 +376,12 @@ function animate() {
                     greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds
                     greenDots[j].cloudTime = 0; // Reset cloud time
                     
+                    // Show "ANTIGRAVITY" text if this is the first time
+                    if (!antigravityTextShown) {
+                        antigravityTextShown = true;
+                        antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
+                    }
+                    
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
                     if (currentSpeed < 50) {
@@ -364,12 +441,14 @@ function animate() {
     const redDotsToSplitCollision = [];
     // Track mini-red pairs that should merge into a regular red (0.05 chance)
     const miniRedPairsToMerge = [];
+    // Track mini-red pairs that should create one mini-red and an orange crescent (1 in 80 chance)
+    const miniRedPairsToCreateOrangeCrescent = [];
     
     // Red dots with each other (using individual masses and radii)
     // Note: Red-red collisions do NOT count toward splitting
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = i + 1; j < redDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, redDots[i].radius, redDots[j].radius)) {
+            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play guitar D pluck sound for red-red collision
                 if (typeof playGuitarDPluck === 'function') {
                     playGuitarDPluck();
@@ -382,8 +461,12 @@ function animate() {
                 // Check if both are mini-reds (mini-reds have radius = CONFIG.dotRadius / 4)
                 const miniRadius = CONFIG.dotRadius / 4;
                 if (redDots[i].radius === miniRadius && redDots[j].radius === miniRadius) {
-                    // 0.05 chance (5%) to merge into a regular red
-                    if (Math.random() < 0.05) {
+                    const randomValue = Math.random();
+                    // 1 in 80 chance (1.25%) to create one mini-red and an orange crescent
+                    if (randomValue < 0.0125) {
+                        miniRedPairsToCreateOrangeCrescent.push({ i: i, j: j });
+                    } else if (randomValue < 0.0625) {
+                        // 0.05 chance (5%) to merge into a regular red (only if not creating orange crescent)
                         miniRedPairsToMerge.push({ i: i, j: j });
                     }
                 }
@@ -394,11 +477,15 @@ function animate() {
     // Red dots with blue dot (using individual masses and radii)
     // These collisions count toward splitting
     for (let i = 0; i < redDotStates.length; i++) {
-        if (checkDotCollision(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, redDots[i].radius, CONFIG.dotRadius)) {
+        if (checkDotCollision(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
             // Play piano C# sound for blue-red collision
             if (typeof playPianoCSharp === 'function') {
                 playPianoCSharp();
             }
+            
+            // Apply speed limit after collision
+            reduceVelocityIfTooFast(redDotStates[i]);
+            reduceVelocityIfTooFast(blueDotState);
             
             const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
             redDots[i].blueCollisionCount++;
@@ -414,11 +501,15 @@ function animate() {
     // These collisions count toward splitting
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, redDots[i].radius, CONFIG.dotRadius * 2)) {
+            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play violin pizzicato high E sound for red-green collision
                 if (typeof playViolinPizzicatoHighE === 'function') {
                     playViolinPizzicatoHighE();
                 }
+                
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(redDotStates[i]);
+                reduceVelocityIfTooFast(greenDotStates[j]);
                 
                 const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
                 redDots[i].greenCollisionCount++;
@@ -433,11 +524,15 @@ function animate() {
     
     // Blue with green dots
     for (let i = 0; i < greenDotStates.length; i++) {
-        if (checkDotCollision(blueDotState, greenDotStates[i], CONFIG.blueMass, greenMass, CONFIG.dotRadius, CONFIG.dotRadius * 2)) {
+        if (checkDotCollision(blueDotState, greenDotStates[i], CONFIG.blueMass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
             // Play organ F2 sound for blue-green collision
             if (typeof playOrganF2 === 'function') {
                 playOrganF2();
             }
+            
+            // Apply speed limit after collision
+            reduceVelocityIfTooFast(blueDotState);
+            reduceVelocityIfTooFast(greenDotStates[i]);
             
             // Apply random 0-0.5 multiplier to blue's y velocity
             const randomMultiplier = Math.random() * 0.5; // Random value between 0 and 0.5
@@ -458,6 +553,12 @@ function animate() {
                 blueAntigravityActive = true;
                 blueAntigravityTimeRemaining = 3.0; // 3 seconds
                 blueGreenAntigravityCount = 0; // Reset counter
+                
+                // Show "ANTIGRAVITY" text if this is the first time
+                if (!antigravityTextShown) {
+                    antigravityTextShown = true;
+                    antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
+                }
                 
                 // Ensure blue dot has at least 50px/s velocity when entering antigravity
                 const currentSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
@@ -496,11 +597,15 @@ function animate() {
     // Green dots with each other
     for (let i = 0; i < greenDotStates.length; i++) {
         for (let j = i + 1; j < greenDotStates.length; j++) {
-            if (checkDotCollision(greenDotStates[i], greenDotStates[j], greenMass, greenMass, CONFIG.dotRadius * 2, CONFIG.dotRadius * 2)) {
+            if (checkDotCollision(greenDotStates[i], greenDotStates[j], greenMass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play harmonica Eb3 sound for green-green collision
                 if (typeof playHarmonicaEb3 === 'function') {
                     playHarmonicaEb3();
                 }
+                
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(greenDotStates[i]);
+                reduceVelocityIfTooFast(greenDotStates[j]);
                 
                 // Increment collision counters for both green dots
                 greenDots[i].greenCollisionCount++;
@@ -511,6 +616,12 @@ function animate() {
                     greenDots[i].antigravityActive = true;
                     greenDots[i].antigravityTimeRemaining = 3.0; // 3 seconds
                     greenDots[i].greenCollisionCount = 0; // Reset counter
+                    
+                    // Show "ANTIGRAVITY" text if this is the first time
+                    if (!antigravityTextShown) {
+                        antigravityTextShown = true;
+                        antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
+                    }
                     
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[i].vx * greenDotStates[i].vx + greenDotStates[i].vy * greenDotStates[i].vy);
@@ -550,33 +661,45 @@ function animate() {
     // Yellow crescents with red dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < redDotStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, yellowCrescents[i].radius, redDots[j].radius)) {
+            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
+                
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(yellowCrescentStates[i]);
+                reduceVelocityIfTooFast(redDotStates[j]);
             }
         }
     }
     
     // Yellow crescents with blue dot
     for (let i = 0; i < yellowCrescentStates.length; i++) {
-        if (checkDotCollision(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, yellowCrescents[i].radius, CONFIG.dotRadius)) {
+        if (checkDotCollision(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
             // Play tomtom bump sound for yellow crescent collision
             if (typeof playTomtomBump === 'function') {
                 playTomtomBump();
             }
+            
+            // Apply speed limit after collision
+            reduceVelocityIfTooFast(yellowCrescentStates[i]);
+            reduceVelocityIfTooFast(blueDotState);
         }
     }
     
     // Yellow crescents with green dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, yellowCrescents[i].radius, CONFIG.dotRadius * 2)) {
+            if (checkDotCollision(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
+                
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(yellowCrescentStates[i]);
+                reduceVelocityIfTooFast(greenDotStates[j]);
             }
         }
     }
@@ -584,11 +707,65 @@ function animate() {
     // Yellow crescents with each other
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = i + 1; j < yellowCrescentStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, yellowCrescents[i].radius, yellowCrescents[j].radius)) {
+            if (checkDotCollision(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
+                
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(yellowCrescentStates[i]);
+                reduceVelocityIfTooFast(yellowCrescentStates[j]);
+            }
+        }
+    }
+    
+    // Comets with all other objects (comets can collide with everything)
+    for (let i = 0; i < cometStates.length; i++) {
+        // Comets with red dots
+        for (let j = 0; j < redDotStates.length; j++) {
+            if (checkDotCollision(cometStates[i], redDotStates[j], comets[i].mass, redDots[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(cometStates[i]);
+                reduceVelocityIfTooFast(redDotStates[j]);
+            }
+        }
+        // Comets with blue dot
+        if (checkDotCollision(cometStates[i], blueDotState, comets[i].mass, CONFIG.blueMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            // Apply speed limit after collision
+            reduceVelocityIfTooFast(cometStates[i]);
+            reduceVelocityIfTooFast(blueDotState);
+        }
+        // Comets with green dots
+        for (let j = 0; j < greenDotStates.length; j++) {
+            if (checkDotCollision(cometStates[i], greenDotStates[j], comets[i].mass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(cometStates[i]);
+                reduceVelocityIfTooFast(greenDotStates[j]);
+            }
+        }
+        // Comets with yellow crescents
+        for (let j = 0; j < yellowCrescentStates.length; j++) {
+            if (checkDotCollision(cometStates[i], yellowCrescentStates[j], comets[i].mass, yellowCrescents[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(cometStates[i]);
+                reduceVelocityIfTooFast(yellowCrescentStates[j]);
+            }
+        }
+        // Comets with orange crescents
+        for (let j = 0; j < orangeCrescentStates.length; j++) {
+            if (checkDotCollision(cometStates[i], orangeCrescentStates[j], comets[i].mass, orangeCrescents[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(cometStates[i]);
+                reduceVelocityIfTooFast(orangeCrescentStates[j]);
+            }
+        }
+        // Comets with other comets
+        for (let j = i + 1; j < cometStates.length; j++) {
+            if (checkDotCollision(cometStates[i], cometStates[j], comets[i].mass, comets[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+                // Apply speed limit after collision
+                reduceVelocityIfTooFast(cometStates[i]);
+                reduceVelocityIfTooFast(cometStates[j]);
             }
         }
     }
@@ -636,6 +813,22 @@ function animate() {
         }
     }
     
+    // Update orangeCrescents array with final positions/velocities
+    for (let i = 0; i < orangeCrescentStates.length; i++) {
+        orangeCrescents[i].x = orangeCrescentStates[i].x;
+        orangeCrescents[i].y = orangeCrescentStates[i].y;
+        orangeCrescents[i].vx = orangeCrescentStates[i].vx;
+        orangeCrescents[i].vy = orangeCrescentStates[i].vy;
+    }
+    
+    // Update comets array with final positions/velocities
+    for (let i = 0; i < cometStates.length; i++) {
+        comets[i].x = cometStates[i].x;
+        comets[i].y = cometStates[i].y;
+        comets[i].vx = cometStates[i].vx;
+        comets[i].vy = cometStates[i].vy;
+    }
+    
     // Check for cloud-cloud collisions (clouds don't move, so check if they overlap)
     const cloudsToRemove = [];
     for (let i = 0; i < clouds.length; i++) {
@@ -675,6 +868,57 @@ function animate() {
                 splitRedDot(index);
                 // After splitting, indices may have shifted, so we need to recalculate removal indices
                 // For now, we'll handle removals by checking positions directly after splitting
+            }
+        }
+    }
+    
+    // Process mini-red pairs that create orange crescents (process in reverse order of larger index to avoid index issues)
+    // Sort pairs by larger index first (descending)
+    miniRedPairsToCreateOrangeCrescent.sort((a, b) => Math.max(b.i, b.j) - Math.max(a.i, a.j));
+    for (let i = 0; i < miniRedPairsToCreateOrangeCrescent.length; i++) {
+        const pair = miniRedPairsToCreateOrangeCrescent[i];
+        const idx1 = pair.i;
+        const idx2 = pair.j;
+        
+        // Ensure indices are still valid and both are still mini-reds
+        if (idx1 >= 0 && idx1 < redDots.length && idx2 >= 0 && idx2 < redDots.length && idx1 !== idx2) {
+            const miniRadius = CONFIG.dotRadius / 4;
+            if (redDots[idx1].radius === miniRadius && redDots[idx2].radius === miniRadius) {
+                // Calculate midpoint position and average velocity
+                const midX = (redDots[idx1].x + redDots[idx2].x) / 2;
+                const midY = (redDots[idx1].y + redDots[idx2].y) / 2;
+                const avgVx = (redDots[idx1].vx + redDots[idx2].vx) / 2;
+                const avgVy = (redDots[idx1].vy + redDots[idx2].vy) / 2;
+                
+                // Remove both mini-reds (remove larger index first)
+                const largerIdx = Math.max(idx1, idx2);
+                const smallerIdx = Math.min(idx1, idx2);
+                redDots.splice(largerIdx, 1);
+                redDots.splice(smallerIdx, 1);
+                
+                // Create one mini-red at midpoint
+                const newMiniRed = {
+                    x: midX,
+                    y: midY,
+                    vx: avgVx,
+                    vy: avgVy,
+                    mass: CONFIG.redMass * 0.5,
+                    radius: miniRadius,
+                    blueCollisionCount: 0,
+                    greenCollisionCount: 0,
+                    trail: [],
+                    fadeInTime: 0
+                };
+                redDots.push(newMiniRed);
+                
+                // Create orange crescent at midpoint
+                const orangeCrescent = initializeOrangeCrescent(midX, midY, avgVx, avgVy);
+                orangeCrescents.push(orangeCrescent);
+                
+                // Play flute D6 sound when orange crescent is created
+                if (typeof playFluteD6 === 'function') {
+                    playFluteD6();
+                }
             }
         }
     }
@@ -938,6 +1182,16 @@ function animate() {
         }
     }
     
+    // Update fade-in times for orange crescents
+    for (let i = 0; i < orangeCrescents.length; i++) {
+        if (orangeCrescents[i].fadeInTime !== undefined) {
+            orangeCrescents[i].fadeInTime += deltaTime;
+            if (orangeCrescents[i].fadeInTime > fadeInDuration) {
+                orangeCrescents[i].fadeInTime = fadeInDuration; // Clamp at max
+            }
+        }
+    }
+    
     for (let i = 0; i < clouds.length; i++) {
         if (clouds[i].fadeInTime !== undefined) {
             clouds[i].fadeInTime += deltaTime;
@@ -1048,6 +1302,49 @@ function animate() {
             // Normal drawing (not dissolving)
             drawYellowCrescent(yellow.x, yellow.y, fadeInOpacity);
         }
+    }
+    
+    // Draw all orange crescents
+    for (let i = 0; i < orangeCrescents.length; i++) {
+        const orange = orangeCrescents[i];
+        const fadeInOpacity = orange.fadeInTime !== undefined ? Math.min(orange.fadeInTime / fadeInDuration, 1.0) : 1.0;
+        drawOrangeCrescent(orange.x, orange.y, fadeInOpacity);
+    }
+    
+    // Draw all comets
+    for (let i = 0; i < comets.length; i++) {
+        const comet = comets[i];
+        // Calculate opacity: full opacity if not fading, fade out over 1 second if fading
+        let opacity = 1.0;
+        if (comet.fadeOutTime >= 0) {
+            opacity = Math.max(0, 1.0 - comet.fadeOutTime / 1.0); // Fade out over 1 second
+        }
+        drawComet(comet.x, comet.y, comet.radius, opacity);
+    }
+    
+    // Update and draw "ANTIGRAVITY" text if showing
+    if (antigravityTextTime > 0) {
+        antigravityTextTime -= deltaTime;
+        
+        // Calculate opacity: full opacity for first 1 second, then fade over 0.5 seconds
+        let textOpacity = 1.0;
+        if (antigravityTextTime < 0.5) {
+            // Fade out over last 0.5 seconds
+            textOpacity = antigravityTextTime / 0.5;
+        }
+        
+        // Draw "ANTIGRAVITY" text in orange at center of canvas
+        ctx.save();
+        ctx.globalAlpha = textOpacity;
+        ctx.fillStyle = '#ff8c00'; // Orange color
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('ANTIGRAVITY', canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+    } else if (antigravityTextTime <= 0 && antigravityTextTime > -1) {
+        // Text display finished, mark as done
+        antigravityTextTime = -1;
     }
     
     requestAnimationFrame(animate);

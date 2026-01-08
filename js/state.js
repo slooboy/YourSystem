@@ -36,6 +36,12 @@ const clouds = []; // Array of { x, y, radius, puffs, mass, fadeInTime }
 // Yellow crescents array - each crescent is an object with position, velocity, mass, and radius
 const yellowCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime, decayTime, dissolveTime, transformType }
 
+// Orange crescents array - each crescent is an object with position, velocity, mass, and radius
+const orangeCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime }
+
+// Comets array - each comet is an object with position, velocity, mass, and fade state
+const comets = []; // Array of { x, y, vx, vy, mass, radius, fadeOutTime }
+
 // Trail arrays for other objects
 const blueTrail = []; // blue dot
 
@@ -67,6 +73,10 @@ const windchimeInterval = 0.4; // Play windchime every 0.4 seconds while antigra
 // Track last organ chord play time for rate limiting
 let lastOrganChordTime = 0; // in seconds
 
+// Antigravity text display (show once, first time antigravity is activated)
+let antigravityTextShown = false; // Track if text has been shown
+let antigravityTextTime = -1; // Time remaining for text display (-1 = not showing, 1.5 = showing, counts down to 0)
+
 // Reset counter (for title language changes)
 let resetCount = 0;
 
@@ -82,3 +92,7 @@ let titleUpdateInProgress = false; // Flag to prevent multiple simultaneous titl
 
 let lastUpdateTime = 0;
 let startTime = Date.now();
+
+// Comet spawning
+let lastCometSpawnTime = 0; // Time when last comet was spawned
+let nextCometSpawnInterval = 5 + Math.random() * 45; // Random interval between 5 and 50 seconds

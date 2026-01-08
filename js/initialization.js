@@ -220,6 +220,20 @@ function initializeYellowCrescent(x, y) {
     };
 }
 
+function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
+    // Create orange crescent at the specified position
+    // Return orange crescent object with position, velocity, mass, and radius
+    return {
+        x: x,
+        y: y,
+        vx: vx,
+        vy: vy,
+        mass: CONFIG.yellowCrescentMass, // Same mass as yellow crescent
+        radius: CONFIG.dotRadius * 1.5, // Same size as yellow crescent
+        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+    };
+}
+
 // Title translations (with proper capitalization for each language)
 const titleTranslations = {
     english: "If a Video Game Designer Had Made the Solar System",
@@ -589,7 +603,18 @@ function resetSimulation() {
     resetCount++;
     
     // Update title language (based on reset count)
-    updateTitle(false); // false = use reset count, not automatic cycling
+    // On initial page load (resetCount === 1), ensure title is English
+    // On subsequent resets (resetCount > 1), follow normal title cycling rules
+    if (resetCount === 1) {
+        // First load - ensure title is English (it's already in HTML, but explicitly set it)
+        const titleElement = document.querySelector('h1');
+        if (titleElement) {
+            titleElement.textContent = titleTranslations.english;
+            adjustTitleFontSize(titleElement);
+        }
+    } else {
+        updateTitle(false); // false = use reset count, not automatic cycling
+    }
     
     // Reset automatic title cycling state
     autoTitleCycleCount = 0;
@@ -609,6 +634,16 @@ function resetSimulation() {
     // Clear yellow crescents
     yellowCrescents.length = 0;
     
+    // Clear orange crescents
+    orangeCrescents.length = 0;
+    
+    // Clear comets
+    comets.length = 0;
+    
+    // Reset comet spawning
+    lastCometSpawnTime = 0;
+    nextCometSpawnInterval = 5 + Math.random() * 45;
+    
     // Clear trails
     blueTrail.length = 0;
     
@@ -620,6 +655,10 @@ function resetSimulation() {
     lastBlueWindchimeTime = 0; // Reset blue windchime timer
     lastOrganChordTime = 0; // Reset organ chord timer
     blueDotFadeInTime = 0; // Reset blue dot fade-in time
+    
+    // Reset antigravity text display (so it can show again on next simulation)
+    antigravityTextShown = false;
+    antigravityTextTime = -1;
     
     // Initialize random number of red dots (2 to 8)
     const numRedDots = Math.floor(Math.random() * 7) + 2; // Random number from 2 to 8

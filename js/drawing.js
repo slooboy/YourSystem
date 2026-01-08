@@ -276,3 +276,35 @@ function drawYellowCrescent(x, y, opacity = 1.0) {
     
     ctx.restore();
 }
+
+function drawOrangeCrescent(x, y, opacity = 1.0) {
+    // Draw an orange crescent moon shape (similar to yellow crescent but orange)
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    
+    const radius = CONFIG.dotRadius * 1.5;
+    
+    // Draw crescent by drawing a full circle and then a smaller circle to create the crescent shape
+    ctx.fillStyle = '#FF8C00'; // Orange color
+    
+    // Draw the main circle (full moon)
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw a smaller circle offset to create the crescent shape
+    // This creates the "shadow" that makes it look like a crescent
+    ctx.fillStyle = '#000'; // Black to create the cutout
+    ctx.beginPath();
+    ctx.arc(x + radius * 0.6, y, radius * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Redraw the main circle outline to make it look cleaner
+    ctx.strokeStyle = '#FF8C00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.restore();
+}

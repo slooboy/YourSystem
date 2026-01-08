@@ -27,5 +27,8 @@ const CONFIG = {
     wallThickness: 3,
     
     // Star properties
-    numStars: 100
+    numStars: 100,
+    
+    // Collision detection
+    collisionRadius: 3 // Fixed collision radius (6px diameter) for all objects regardless of visual size
 };
