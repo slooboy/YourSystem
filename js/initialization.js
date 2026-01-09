@@ -61,8 +61,13 @@ function initializeRedDot() {
     }
     
     // Return red dot object with position, velocity, mass, radius, collision counts, and trail
-    // Decay time: exponential distribution with mean 10 seconds
-    const decayTime = -10 * Math.log(Math.random()); // Exponential decay with average 10 seconds
+    // Decay time: exponential distribution with mean 100 seconds (multiplied by 10 from 10 seconds)
+    const decayTime = -100 * Math.log(Math.random()); // Exponential decay with average 100 seconds
+    
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
     
     return {
         x: x,
@@ -159,9 +164,14 @@ function initializeBlueDot() {
     blueDotX = minX + Math.random() * (maxX - minX);
     blueDotY = minY + Math.random() * (maxY - minY);
     
-    // Initial velocity: set to 0
+    // Initial velocity: set to 0 (will be multiplied by random factor)
     blueVx = 0;
     blueVy = 0;
+    
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    blueVx *= velocityMultiplier;
+    blueVy *= velocityMultiplier;
     
     // Reset fade-in time
     blueDotFadeInTime = 0;
@@ -334,6 +344,11 @@ function initializeGreenDot() {
         }
     }
     
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
+    
     // Return green dot object with position, velocity, trail, antigravity state, and cloud time
     return {
         x: x,
@@ -424,9 +439,14 @@ function changeCloudShapeAndMass(cloud) {
 
 function initializeYellowCrescent(x, y) {
     // Create yellow crescent at the specified position (where cloud was)
-    // Initial velocity: set to 0
-    const vx = 0;
-    const vy = 0;
+    // Initial velocity: set to 0 (will be multiplied by random factor)
+    let vx = 0;
+    let vy = 0;
+    
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
     
     // Return yellow crescent object with position, velocity, mass, and radius
     return {
@@ -493,6 +513,11 @@ function initializeEarth() {
     // Generate Earth name in a random language
     earthName = generateEarthName();
     
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
+    
     return {
         x: x,
         y: y,
@@ -500,7 +525,10 @@ function initializeEarth() {
         vy: vy,
         mass: CONFIG.redMass * 50, // Mass of 50 reds (increased by factor of 10)
         radius: CONFIG.dotRadius * 1.0, // Same size as orange crescent
-        fadeInTime: 0 // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
+        antigravityActive: false, // Antigravity state (activated when objects collide with earth)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
     };
 }
 
@@ -548,6 +576,11 @@ function initializeComet() {
         vy = Math.sin(angle) * speed;
     }
     
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
+    
     return {
         x: x,
         y: y,
@@ -563,6 +596,11 @@ function initializeComet() {
 
 function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
     // Create orange crescent at the specified position
+    // Multiply initial velocity by random factor between 1 and 4
+    const velocityMultiplier = 1 + Math.random() * 3; // Random between 1 and 4
+    vx *= velocityMultiplier;
+    vy *= velocityMultiplier;
+    
     // Return orange crescent object with position, velocity, mass, and radius
     return {
         x: x,

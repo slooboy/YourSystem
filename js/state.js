@@ -60,7 +60,7 @@ const orangeCrescents = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime
 const comets = []; // Array of { x, y, vx, vy, mass, radius, fadeInTime }
 
 // Earth object - single object that appears at the beginning
-let earth = null; // Object with { x, y, vx, vy, mass, radius, fadeInTime }
+let earth = null; // Object with { x, y, vx, vy, mass, radius, fadeInTime, antigravityActive, antigravityTimeRemaining, lastWindchimeTime }
 
 // Trail arrays for other objects
 const blueTrail = []; // blue dot

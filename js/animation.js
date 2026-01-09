@@ -117,27 +117,27 @@ function animate() {
     if (earthState && earth) {
         // Earth with red dots
         for (let i = 0; i < redDotStates.length; i++) {
-            applyGravitationalForce(earthState, redDotStates[i], earth.mass, redDots[i].mass, deltaTime, false, redDots[i].antigravityActive);
+            applyGravitationalForce(earthState, redDotStates[i], earth.mass, redDots[i].mass, deltaTime, earth.antigravityActive, redDots[i].antigravityActive);
         }
         // Earth with blue dot
-        applyGravitationalForce(earthState, blueDotState, earth.mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        applyGravitationalForce(earthState, blueDotState, earth.mass, CONFIG.blueMass, deltaTime, earth.antigravityActive, blueAntigravityActive);
         // Earth with green dots
         for (let i = 0; i < greenDotStates.length; i++) {
-            applyGravitationalForce(earthState, greenDotStates[i], earth.mass, greenMass, deltaTime, false, greenDots[i].antigravityActive);
+            applyGravitationalForce(earthState, greenDotStates[i], earth.mass, greenMass, deltaTime, earth.antigravityActive, greenDots[i].antigravityActive);
         }
         // Earth with yellow crescents
         for (let i = 0; i < yellowCrescentStates.length; i++) {
-            applyGravitationalForce(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, deltaTime, false, yellowCrescents[i].antigravityActive);
+            applyGravitationalForce(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, deltaTime, earth.antigravityActive, yellowCrescents[i].antigravityActive);
         }
         // Earth with orange crescents
         for (let i = 0; i < orangeCrescentStates.length; i++) {
-            applyGravitationalForce(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, deltaTime, false, orangeCrescents[i].antigravityActive);
+            applyGravitationalForce(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, deltaTime, earth.antigravityActive, orangeCrescents[i].antigravityActive);
         }
         // Earth with clouds
         for (let i = 0; i < clouds.length; i++) {
             const cloud = clouds[i];
             const cloudState = { x: cloud.x, y: cloud.y, vx: 0, vy: 0 };
-            applyGravitationalForce(earthState, cloudState, earth.mass, cloud.mass, deltaTime);
+            applyGravitationalForce(earthState, cloudState, earth.mass, cloud.mass, deltaTime, earth.antigravityActive, false);
         }
     }
     
@@ -165,7 +165,7 @@ function animate() {
         }
         // Comets with earth
         if (earthState) {
-            applyGravitationalForce(cometStates[i], earthState, comets[i].mass, earth.mass, deltaTime);
+            applyGravitationalForce(cometStates[i], earthState, comets[i].mass, earth.mass, deltaTime, false, earth.antigravityActive);
         }
         // Comets with clouds
         for (let j = 0; j < clouds.length; j++) {
@@ -302,6 +302,8 @@ function animate() {
             newRedDot.y = comets[i].y + perpY * offsetDistance;
             newRedDot.vx = 0; // Initial velocity of 0
             newRedDot.vy = 0; // Initial velocity of 0
+            // Note: velocity multiplier already applied in initializeRedDot(), but we override to 0
+            // This is intentional - comet-spawned red dots start stationary
             newRedDot.parentCometIndex = i; // Track parent comet for antigravity
             newRedDot.antigravityActive = true; // Start with antigravity active (within 100px)
             redDots.push(newRedDot);
@@ -645,6 +647,13 @@ function animate() {
                     redDots[i].antigravityTimeRemaining = 3.0;
                     redDots[i].lastWindchimeTime = 0;
                 }
+                
+                // Also activate antigravity for Earth (3 seconds)
+                if (earth && !earth.antigravityActive) {
+                    earth.antigravityActive = true;
+                    earth.antigravityTimeRemaining = 3.0;
+                    earth.lastWindchimeTime = 0;
+                }
             }
         }
         
@@ -661,6 +670,13 @@ function animate() {
                 blueAntigravityActive = true;
                 blueAntigravityTimeRemaining = 3.0;
                 lastBlueWindchimeTime = 0;
+            }
+            
+            // Also activate antigravity for Earth (3 seconds)
+            if (earth && !earth.antigravityActive) {
+                earth.antigravityActive = true;
+                earth.antigravityTimeRemaining = 3.0;
+                earth.lastWindchimeTime = 0;
             }
             
             // Ensure minimum velocity to prevent sticking (similar to cloud logic)
@@ -695,6 +711,13 @@ function animate() {
                     greenDots[i].lastWindchimeTime = 0;
                 }
                 
+                // Also activate antigravity for Earth (3 seconds)
+                if (earth && !earth.antigravityActive) {
+                    earth.antigravityActive = true;
+                    earth.antigravityTimeRemaining = 3.0;
+                    earth.lastWindchimeTime = 0;
+                }
+                
                 // Ensure minimum velocity to prevent sticking (similar to cloud logic)
                 const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
                 if (earthSpeed > 0 && earthSpeed < 0.5) {
@@ -726,6 +749,13 @@ function animate() {
                     yellowCrescents[i].antigravityTimeRemaining = 3.0;
                     yellowCrescents[i].lastWindchimeTime = 0;
                 }
+                
+                // Also activate antigravity for Earth (3 seconds)
+                if (earth && !earth.antigravityActive) {
+                    earth.antigravityActive = true;
+                    earth.antigravityTimeRemaining = 3.0;
+                    earth.lastWindchimeTime = 0;
+                }
             }
         }
         
@@ -742,6 +772,13 @@ function animate() {
                     orangeCrescents[i].antigravityActive = true;
                     orangeCrescents[i].antigravityTimeRemaining = 3.0;
                     orangeCrescents[i].lastWindchimeTime = 0;
+                }
+                
+                // Also activate antigravity for Earth (3 seconds)
+                if (earth && !earth.antigravityActive) {
+                    earth.antigravityActive = true;
+                    earth.antigravityTimeRemaining = 3.0;
+                    earth.lastWindchimeTime = 0;
                 }
             }
         }
@@ -860,6 +897,13 @@ function animate() {
                 blueAntigravityTimeRemaining = 3.0; // 3 seconds
                 blueGreenAntigravityCount = 0; // Reset counter
                 
+                // Also activate antigravity for the green dot that caused it (3 seconds)
+                if (!greenDots[i].antigravityActive) {
+                    greenDots[i].antigravityActive = true;
+                    greenDots[i].antigravityTimeRemaining = 3.0;
+                    greenDots[i].lastWindchimeTime = 0;
+                }
+                
                 // Show "ANTIGRAVITY" text if this is the first time
                 if (!antigravityTextShown) {
                     antigravityTextShown = true;
@@ -884,6 +928,13 @@ function animate() {
                 greenDots[i].antigravityActive = true;
                 greenDots[i].antigravityTimeRemaining = 3.0; // 3 seconds
                 greenDots[i].blueCollisionCount = 0; // Reset counter
+                
+                // Also activate antigravity for blue dot that caused it (3 seconds)
+                if (!blueAntigravityActive) {
+                    blueAntigravityActive = true;
+                    blueAntigravityTimeRemaining = 3.0;
+                    lastBlueWindchimeTime = 0;
+                }
                 
                 // Ensure green dot has at least 50px/s velocity when entering antigravity
                 const currentSpeed = Math.sqrt(greenDotStates[i].vx * greenDotStates[i].vx + greenDotStates[i].vy * greenDotStates[i].vy);
@@ -921,6 +972,13 @@ function animate() {
                     greenDots[i].antigravityTimeRemaining = 3.0; // 3 seconds
                     greenDots[i].greenCollisionCount = 0; // Reset counter
                     
+                    // Also activate antigravity for the other green dot that caused it (3 seconds)
+                    if (!greenDots[j].antigravityActive) {
+                        greenDots[j].antigravityActive = true;
+                        greenDots[j].antigravityTimeRemaining = 3.0;
+                        greenDots[j].lastWindchimeTime = 0;
+                    }
+                    
                     // Show "ANTIGRAVITY" text next to green dot (up to 2 times total)
                     if (antigravityTextCount < 2) {
                         antigravityTextCount++;
@@ -945,6 +1003,13 @@ function animate() {
                     greenDots[j].antigravityActive = true;
                     greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds
                     greenDots[j].greenCollisionCount = 0; // Reset counter
+                    
+                    // Also activate antigravity for the other green dot that caused it (3 seconds)
+                    if (!greenDots[i].antigravityActive) {
+                        greenDots[i].antigravityActive = true;
+                        greenDots[i].antigravityTimeRemaining = 3.0;
+                        greenDots[i].lastWindchimeTime = 0;
+                    }
                     
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
@@ -1348,6 +1413,23 @@ function animate() {
         }
     }
     
+    // Update Earth antigravity timer
+    if (earth && earth.antigravityActive) {
+        earth.antigravityTimeRemaining -= deltaTime;
+        if (earth.antigravityTimeRemaining <= 0) {
+            earth.antigravityActive = false;
+            earth.antigravityTimeRemaining = 0;
+        } else {
+            // Play windchime sound periodically while antigravity is active
+            if (currentTime - earth.lastWindchimeTime >= windchimeInterval) {
+                if (typeof playWindchime === 'function') {
+                    playWindchime();
+                }
+                earth.lastWindchimeTime = currentTime;
+            }
+        }
+    }
+    
     // Update yellow crescents: decay and dissolve
     const yellowCrescentsToTransform = [];
     for (let i = yellowCrescents.length - 1; i >= 0; i--) {
@@ -1428,7 +1510,7 @@ function animate() {
             }
         }
         
-        // Update decay time for regular red dots (exponential decay with average 10 seconds)
+        // Update decay time for regular red dots (exponential decay with average 100 seconds - multiplied by 10)
         const miniRadius = CONFIG.dotRadius / 4;
         if (red.radius !== miniRadius && red.decayTime !== undefined && red.decayTimeThreshold !== undefined) {
             red.decayTime += deltaTime;

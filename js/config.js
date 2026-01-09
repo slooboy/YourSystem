@@ -12,7 +12,7 @@ const CONFIG = {
     gravity: 0, // pixels per second squared (disabled - no downward gravity)
     
     // Gravitational constant for inter-object attraction
-    initialG: 100, // gravitational constant (pixels^3 / (mass * second^2)) - reduced to 1/100 of previous value (was 10000)
+    initialG: 500, // gravitational constant (pixels^3 / (mass * second^2)) - multiplied by 5 from 100
     
     // Mass properties (affects collisions and gravitational attraction)
     redMass: 1, // base mass
@@ -21,7 +21,7 @@ const CONFIG = {
     yellowCrescentMass: 2, // 2x red dot's mass
     
     // Trail properties
-    initialTrailLength: 300, // number of positions to store in trail (doubled from 150)
+    initialTrailLength: 900, // number of positions to store in trail (multiplied by 3 from 300)
     
     // Rectangle properties
     wallThickness: 3,
