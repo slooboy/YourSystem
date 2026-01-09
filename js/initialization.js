@@ -77,7 +77,10 @@ function initializeRedDot() {
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         cloudFadeAmount: 1.0, // Fade amount when in clouds (1.0 = fully visible, 0.0 = deleted)
         decayTime: 0, // Time since creation (will decay to minired when reaches decayTimeThreshold)
-        decayTimeThreshold: decayTime // Random decay threshold (exponential distribution, mean 10s)
+        decayTimeThreshold: decayTime, // Random decay threshold (exponential distribution, mean 10s)
+        antigravityActive: false, // Antigravity state (activated on earth collision)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
     };
 }
 
@@ -109,7 +112,10 @@ function splitRedDot(index) {
         trail: [],
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         decayTime: 0, // Time since creation (half-life decay, 0 to decayTimeThreshold)
-        decayTimeThreshold: miniredDecayTime // Random decay threshold (exponential distribution, half-life 10s)
+        decayTimeThreshold: miniredDecayTime, // Random decay threshold (exponential distribution, half-life 10s)
+        antigravityActive: false, // Antigravity state (activated on earth collision)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
         // Note: mini-reds don't have cloudFadeAmount - they're exempt from cloud effects
     };
     
@@ -125,7 +131,10 @@ function splitRedDot(index) {
         trail: [],
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         decayTime: 0, // Time since creation (half-life decay, 0 to decayTimeThreshold)
-        decayTimeThreshold: -10 * Math.log(Math.random()) // Random decay threshold for second minired
+        decayTimeThreshold: -10 * Math.log(Math.random()), // Random decay threshold for second minired
+        antigravityActive: false, // Antigravity state (activated on earth collision)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
         // Note: mini-reds don't have cloudFadeAmount - they're exempt from cloud effects
     };
     
@@ -431,7 +440,10 @@ function initializeYellowCrescent(x, y) {
         decayTime: 0, // Time since creation (radioactive decay, 0 to 10 seconds)
         dissolveTime: -1, // Time in dissolve transition (0 to 0.5 seconds, -1 if not dissolving)
         transformType: null, // 'blue' or 'red' - set when decay completes
-        name: generateCrescentName() // Generate a unique name for this crescent
+        name: generateCrescentName(), // Generate a unique name for this crescent
+        antigravityActive: false, // Antigravity state (activated on earth collision)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
     };
 }
 
@@ -562,7 +574,10 @@ function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         decayTime: 0, // Time since creation (radioactive decay, 0 to 5 seconds half-life)
         fadeOutTime: -1, // Time remaining for fade-out (-1 = not fading, >= 0 = fading out)
-        name: generateCrescentName() // Generate a unique name for this crescent
+        name: generateCrescentName(), // Generate a unique name for this crescent
+        antigravityActive: false, // Antigravity state (activated on earth collision)
+        antigravityTimeRemaining: 0, // Time remaining for antigravity (3 seconds)
+        lastWindchimeTime: 0 // Track last windchime play time for antigravity sound
     };
 }
 
@@ -1058,11 +1073,8 @@ function resetSimulation() {
     // Initialize earth at the start (do this early so other objects can use it for tangential velocity)
     earth = initializeEarth();
     
-    // Initialize random number of red dots (2 to 8)
-    const numRedDots = Math.floor(Math.random() * 7) + 2; // Random number from 2 to 8
-    for (let i = 0; i < numRedDots; i++) {
-        redDots.push(initializeRedDot());
-    }
+    // Red dots are no longer created at initialization - only from comets
+    // (No initial red dots created)
     
     // Initialize green dots: 1 in 10 chance of 2 or 3 green stars, otherwise 1
     let numGreenDots = 1; // Default: 1 green star

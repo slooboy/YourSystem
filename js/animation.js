@@ -1148,21 +1148,7 @@ function animate() {
                 redDots.splice(largerIdx, 1);
                 redDots.splice(smallerIdx, 1);
                 
-                // Create new regular red dot at midpoint
-                const newRedDot = {
-                    x: midX,
-                    y: midY,
-                    vx: avgVx,
-                    vy: avgVy,
-                    mass: CONFIG.redMass,
-                    radius: CONFIG.dotRadius / 2, // Match regular red dot size
-                    blueCollisionCount: 0,
-                    greenCollisionCount: 0,
-                    trail: [],
-                    fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
-                    cloudFadeAmount: 1.0 // Fade amount when in clouds (1.0 = fully visible, 0.0 = deleted)
-                };
-                redDots.push(newRedDot);
+                // Mini-red merging no longer creates regular red dots - just remove them
             }
         }
     }
@@ -1413,35 +1399,28 @@ function animate() {
                     // Remove the mini-red
                     redDots.splice(index, 1);
                     
-                    // Create new object based on random selection
-                    if (objectType < 0.05) {
-                        // 5% chance: red dot (reduced from 20%)
-                        const newRed = initializeRedDot();
-                        newRed.x = x;
-                        newRed.y = y;
-                        newRed.vx = vx;
-                        newRed.vy = vy;
-                        redDots.push(newRed);
-                    } else if (objectType < 0.4) {
-                        // 20% chance: green dot
+                    // Create new object based on random selection (red dot generation removed - only from comets)
+                    // Redistributed probabilities: 25% each for green, yellow, orange, cloud
+                    if (objectType < 0.25) {
+                        // 25% chance: green dot
                         const newGreen = initializeGreenDot();
                         newGreen.x = x;
                         newGreen.y = y;
                         newGreen.vx = vx;
                         newGreen.vy = vy;
                         greenDots.push(newGreen);
-                    } else if (objectType < 0.6) {
-                        // 20% chance: yellow crescent
+                    } else if (objectType < 0.5) {
+                        // 25% chance: yellow crescent
                         const newYellow = initializeYellowCrescent(x, y);
                         newYellow.vx = vx;
                         newYellow.vy = vy;
                         yellowCrescents.push(newYellow);
-                    } else if (objectType < 0.8) {
-                        // 20% chance: orange crescent
+                    } else if (objectType < 0.75) {
+                        // 25% chance: orange crescent
                         const newOrange = initializeOrangeCrescent(x, y, vx, vy);
                         orangeCrescents.push(newOrange);
                     } else {
-                        // 20% chance: cloud
+                        // 25% chance: cloud
                         const newCloud = initializeCloud();
                         newCloud.x = x;
                         newCloud.y = y;
