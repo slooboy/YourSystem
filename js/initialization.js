@@ -1097,13 +1097,16 @@ function resetSimulation() {
     blueAntigravityTimeRemaining = 0;
     blueGreenAntigravityCount = 0;
     blueCloudTime = 0; // Reset blue cloud time
+    blueWasInCloud = false; // Reset blue was in cloud flag
     lastBlueWindchimeTime = 0; // Reset blue windchime timer
     lastOrganChordTime = 0; // Reset organ chord timer
     blueDotFadeInTime = 0; // Reset blue dot fade-in time
     
     // Reset antigravity text display (so it can show again on next simulation)
-    antigravityTextShown = false;
+    antigravityTriggerHistory = [];
     antigravityTextTime = -1;
+    antigravityTextX = 0;
+    antigravityTextY = 0;
     
     // Reinitialize blue dot with random position (do this first so other objects can use it for tangential velocity)
     initializeBlueDot();

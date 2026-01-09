@@ -522,6 +522,41 @@ function playBoing() {
     }
 }
 
+// Plop sound for comet creating red dot
+function playPlop() {
+    if (!ensureAudioReady()) return;
+    
+    try {
+        const now = audioContext.currentTime;
+        
+        // Plop sound: low frequency with quick attack and decay (like a water drop)
+        // Use frequencies in the lower range for a "plop" character
+        const baseFreq = 150.00 + Math.random() * 50; // Random between 150-200 Hz (low range)
+        
+        // Create plop sound with multiple oscillators for richer tone
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        const destination = getAudioDestination();
+        if (destination) gainNode.connect(destination);
+        
+        // Use triangle wave for softer plop sound
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(baseFreq, now);
+        
+        // Envelope: very quick attack, fast decay (plop)
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.002); // Very quick attack
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.08); // Fast decay
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.1);
+    } catch (error) {
+        console.error('Error playing plop sound:', error);
+    }
+}
+
 // Background choral system state
 let backgroundChoralState = 'resting'; // 'playing', 'fading', 'resting'
 let backgroundChoralNextNoteTime = 0;

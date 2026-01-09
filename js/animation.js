@@ -1,5 +1,34 @@
 // Animation loop
 
+// Helper function to check if antigravity text should be shown
+// Returns true if text should be shown (hasn't been shown in last 5 triggers)
+// x, y: position of object that triggered antigravity
+function shouldShowAntigravityText(x, y) {
+    // Check if text was shown in any of the last 5 triggers
+    const textShownInLast5 = antigravityTriggerHistory.some(shown => shown === true);
+    
+    // If text was shown in last 5, don't show it again
+    if (textShownInLast5) {
+        // Add false to history (text not shown this trigger)
+        antigravityTriggerHistory.push(false);
+    } else {
+        // Text wasn't shown in last 5, show it now
+        antigravityTriggerHistory.push(true);
+        antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
+        // Store position of object that triggered antigravity
+        antigravityTextX = x;
+        antigravityTextY = y;
+    }
+    
+    // Keep only the last 5 entries
+    if (antigravityTriggerHistory.length > 5) {
+        antigravityTriggerHistory.shift(); // Remove oldest entry
+    }
+    
+    // Return whether text was shown this trigger
+    return antigravityTriggerHistory[antigravityTriggerHistory.length - 1];
+}
+
 function animate() {
     // Ensure context is initialized
     if (!ensureContext()) {
@@ -308,6 +337,11 @@ function animate() {
             newRedDot.antigravityActive = true; // Start with antigravity active (within 100px)
             redDots.push(newRedDot);
             
+            // Play plop sound when comet creates red dot
+            if (typeof playPlop === 'function') {
+                playPlop();
+            }
+            
             // Reset timer and generate next interval
             comets[i].lastRedDotTime = 0;
             comets[i].nextRedDotInterval = -10 * Math.log(Math.random()); // Exponential distribution, average 10 seconds (increased from 2s)
@@ -437,21 +471,24 @@ function animate() {
         if (blueDistance < cloudRadius) {
             blueInCloud = true; // Blue dot is in a cloud
             
-            // 1 in 10 chance to double momentum, otherwise halve it
-            if (Math.random() < 0.1) {
-                blueDotState.vx *= 2.0;
-                blueDotState.vy *= 2.0;
-            } else {
-                blueDotState.vx *= 0.5;
-                blueDotState.vy *= 0.5;
-            }
-            
-            // Ensure minimum velocity of 0.5px/s
-            const blueSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
-            if (blueSpeed > 0 && blueSpeed < 0.5) {
-                const scale = 0.5 / blueSpeed;
-                blueDotState.vx *= scale;
-                blueDotState.vy *= scale;
+            // Only apply momentum change on entry (not already in cloud)
+            if (!blueWasInCloud) {
+                // 1 in 10 chance to double momentum, otherwise halve it
+                if (Math.random() < 0.1) {
+                    blueDotState.vx *= 2.0;
+                    blueDotState.vy *= 2.0;
+                } else {
+                    blueDotState.vx *= 0.5;
+                    blueDotState.vy *= 0.5;
+                }
+                
+                // Ensure minimum velocity of 0.5px/s
+                const blueSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
+                if (blueSpeed > 0 && blueSpeed < 0.5) {
+                    const scale = 0.5 / blueSpeed;
+                    blueDotState.vx *= scale;
+                    blueDotState.vy *= scale;
+                }
             }
             
             // Track time blue dot spends in cloud
@@ -463,11 +500,8 @@ function animate() {
                 blueAntigravityTimeRemaining = 3.0; // 3 seconds
                 blueCloudTime = 0; // Reset cloud time
                 
-                // Show "ANTIGRAVITY" text next to blue dot (up to 2 times total)
-                if (antigravityTextCount < 2) {
-                    antigravityTextCount++;
-                    blueAntigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
-                }
+                // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                shouldShowAntigravityText(blueDotState.x, blueDotState.y);
                 
                 // Ensure blue dot has at least 50px/s velocity when entering antigravity
                 const currentSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
@@ -547,11 +581,8 @@ function animate() {
                     greenDots[j].antigravityTimeRemaining = 3.0; // 3 seconds
                     greenDots[j].cloudTime = 0; // Reset cloud time
                     
-                    // Show "ANTIGRAVITY" text next to green dot (up to 2 times total)
-                    if (antigravityTextCount < 2) {
-                        antigravityTextCount++;
-                        greenDots[j].antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
-                    }
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(greenDotStates[j].x, greenDotStates[j].y);
                     
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
@@ -625,6 +656,7 @@ function animate() {
     }
     
     // Update wasInCloud flags for next frame (after processing all clouds)
+    blueWasInCloud = blueInCloud;
     for (let j = 0; j < greenDots.length; j++) {
         greenDots[j].wasInCloud = greenInCloud[j];
     }
@@ -646,6 +678,8 @@ function animate() {
                     redDots[i].antigravityActive = true;
                     redDots[i].antigravityTimeRemaining = 3.0;
                     redDots[i].lastWindchimeTime = 0;
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(redDotStates[i].x, redDotStates[i].y);
                 }
                 
                 // Also activate antigravity for Earth (3 seconds)
@@ -670,6 +704,8 @@ function animate() {
                 blueAntigravityActive = true;
                 blueAntigravityTimeRemaining = 3.0;
                 lastBlueWindchimeTime = 0;
+                // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                shouldShowAntigravityText(blueDotState.x, blueDotState.y);
             }
             
             // Also activate antigravity for Earth (3 seconds)
@@ -709,6 +745,8 @@ function animate() {
                     greenDots[i].antigravityActive = true;
                     greenDots[i].antigravityTimeRemaining = 3.0;
                     greenDots[i].lastWindchimeTime = 0;
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(greenDotStates[i].x, greenDotStates[i].y);
                 }
                 
                 // Also activate antigravity for Earth (3 seconds)
@@ -748,6 +786,8 @@ function animate() {
                     yellowCrescents[i].antigravityActive = true;
                     yellowCrescents[i].antigravityTimeRemaining = 3.0;
                     yellowCrescents[i].lastWindchimeTime = 0;
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(yellowCrescentStates[i].x, yellowCrescentStates[i].y);
                 }
                 
                 // Also activate antigravity for Earth (3 seconds)
@@ -772,6 +812,8 @@ function animate() {
                     orangeCrescents[i].antigravityActive = true;
                     orangeCrescents[i].antigravityTimeRemaining = 3.0;
                     orangeCrescents[i].lastWindchimeTime = 0;
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(orangeCrescentStates[i].x, orangeCrescentStates[i].y);
                 }
                 
                 // Also activate antigravity for Earth (3 seconds)
@@ -904,11 +946,8 @@ function animate() {
                     greenDots[i].lastWindchimeTime = 0;
                 }
                 
-                // Show "ANTIGRAVITY" text if this is the first time
-                if (!antigravityTextShown) {
-                    antigravityTextShown = true;
-                    antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
-                }
+                // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                shouldShowAntigravityText(blueDotState.x, blueDotState.y);
                 
                 // Ensure blue dot has at least 50px/s velocity when entering antigravity
                 const currentSpeed = Math.sqrt(blueDotState.vx * blueDotState.vx + blueDotState.vy * blueDotState.vy);
@@ -979,11 +1018,8 @@ function animate() {
                         greenDots[j].lastWindchimeTime = 0;
                     }
                     
-                    // Show "ANTIGRAVITY" text next to green dot (up to 2 times total)
-                    if (antigravityTextCount < 2) {
-                        antigravityTextCount++;
-                        greenDots[j].antigravityTextTime = 1.5; // Show for 1 second, then fade over 0.5 seconds
-                    }
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(greenDotStates[i].x, greenDotStates[i].y);
                     
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[i].vx * greenDotStates[i].vx + greenDotStates[i].vy * greenDotStates[i].vy);
@@ -1010,6 +1046,9 @@ function animate() {
                         greenDots[i].antigravityTimeRemaining = 3.0;
                         greenDots[i].lastWindchimeTime = 0;
                     }
+                    
+                    // Show "ANTIGRAVITY" text if not shown in last 5 triggers
+                    shouldShowAntigravityText(greenDotStates[j].x, greenDotStates[j].y);
                     
                     // Ensure green dot has at least 50px/s velocity when entering antigravity
                     const currentSpeed = Math.sqrt(greenDotStates[j].vx * greenDotStates[j].vx + greenDotStates[j].vy * greenDotStates[j].vy);
@@ -1949,18 +1988,49 @@ function animate() {
             textOpacity = antigravityTextTime / 0.5;
         }
         
-        // Draw "ANTIGRAVITY" text in orange at center of canvas
-        ctx.save();
-        ctx.globalAlpha = textOpacity;
-        ctx.fillStyle = '#ff8c00'; // Orange color
-        ctx.font = 'bold 48px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('ANTIGRAVITY', canvas.width / 2, canvas.height / 2);
-        ctx.restore();
+        // Calculate center of starfield
+        const starfieldCenterX = rectangleX + rectangleWidth / 2;
+        const starfieldCenterY = rectangleY + rectangleHeight / 2;
+        
+        // Only draw if we have a valid position (check if position is within reasonable bounds)
+        // Position should be within the starfield bounds
+        if (antigravityTextX >= rectangleX && antigravityTextX <= rectangleX + rectangleWidth &&
+            antigravityTextY >= rectangleY && antigravityTextY <= rectangleY + rectangleHeight) {
+            // Calculate direction from object to center of starfield
+            const dx = starfieldCenterX - antigravityTextX;
+            const dy = starfieldCenterY - antigravityTextY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Position text next to object, on the side toward the center
+            // Offset by object radius + text offset (about 60px for text size)
+            const textOffset = 60;
+            let textX, textY;
+            if (distance > 0.1) { // Use small threshold to avoid division issues
+                // Normal case: position text toward center
+                textX = antigravityTextX + (dx / distance) * textOffset;
+                textY = antigravityTextY + (dy / distance) * textOffset;
+            } else {
+                // Edge case: object is exactly at center, position text to the right
+                textX = antigravityTextX + textOffset;
+                textY = antigravityTextY;
+            }
+            
+            // Draw "ANTIGRAVITY" text in orange next to object
+            ctx.save();
+            ctx.globalAlpha = textOpacity;
+            ctx.fillStyle = '#ff8c00'; // Orange color
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('ANTIGRAVITY', textX, textY);
+            ctx.restore();
+        }
+        
     } else if (antigravityTextTime <= 0 && antigravityTextTime > -1) {
-        // Text display finished, mark as done
+        // Text display finished, mark as done and reset position
         antigravityTextTime = -1;
+        antigravityTextX = 0;
+        antigravityTextY = 0;
     }
     
     requestAnimationFrame(animate);

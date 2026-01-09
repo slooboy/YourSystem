@@ -183,10 +183,10 @@ function graduallySlowDown(dotState, deltaTime) {
 }
 
 // Function to apply viscosity (air resistance/friction)
-// Reduces velocity by 10% per second (reduced from 25% to allow more arcs)
+// Reduces velocity by 0.5% per second
 function applyViscosity(dotState, deltaTime) {
-    // Reduce velocity by 10% per second: multiply by (1 - 0.1 * deltaTime)
-    const viscosityFactor = 1 - 0.1 * deltaTime;
+    // Reduce velocity by 0.5% per second: multiply by (1 - 0.005 * deltaTime)
+    const viscosityFactor = 1 - 0.005 * deltaTime;
     dotState.vx *= viscosityFactor;
     dotState.vy *= viscosityFactor;
 }

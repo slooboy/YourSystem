@@ -89,6 +89,7 @@ let blueAntigravityTextTime = -1; // Time remaining for antigravity text display
 
 // Track time blue dot has spent in clouds (for antigravity activation)
 let blueCloudTime = 0; // in seconds
+let blueWasInCloud = false; // Track if blue dot was in cloud last frame (to only apply momentum change on entry)
 
 // Track last windchime play time for antigravity sounds
 let lastBlueWindchimeTime = 0; // in seconds
@@ -97,8 +98,10 @@ const windchimeInterval = 0.4; // Play windchime every 0.4 seconds while antigra
 // Track last organ chord play time for rate limiting
 let lastOrganChordTime = 0; // in seconds
 
-// Antigravity text display (show up to 2 times, next to objects experiencing antigravity)
-let antigravityTextCount = 0; // Count of times antigravity text has been shown (max 2)
+// Antigravity text display (show again if not shown in last 5 triggers)
+let antigravityTriggerHistory = []; // Array tracking the last 5 antigravity triggers (true = text was shown, false = text was not shown)
+let antigravityTextX = 0; // X position of object that triggered antigravity text
+let antigravityTextY = 0; // Y position of object that triggered antigravity text
 
 // Reset counter (for title language changes)
 let resetCount = 0;

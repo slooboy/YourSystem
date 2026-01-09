@@ -21,7 +21,7 @@ const CONFIG = {
     yellowCrescentMass: 2, // 2x red dot's mass
     
     // Trail properties
-    initialTrailLength: 900, // number of positions to store in trail (multiplied by 3 from 300)
+    initialTrailLength: 270, // number of positions to store in trail (30% of 900)
     
     // Rectangle properties
     wallThickness: 3,
