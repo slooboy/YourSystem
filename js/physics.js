@@ -115,9 +115,9 @@ function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2)
         
         // Only resolve collision if dots are moving towards each other
         if (relativeSpeed < 0) {
-            // Elastic collision response for different masses
-            // Impulse: J = 2 * m1 * m2 * v_rel_n / (m1 + m2)
-            const impulse = 2 * mass1 * mass2 * relativeSpeed / (mass1 + mass2);
+            // Elastic collision response for different masses (reduced impulse to allow more arcs)
+            // Impulse: J = 1.5 * m1 * m2 * v_rel_n / (m1 + m2) (reduced from 2.0 to 1.5 for less disruption)
+            const impulse = 1.5 * mass1 * mass2 * relativeSpeed / (mass1 + mass2);
             
             // Apply impulse to dot1: v1' = v1 + J/m1 * n
             dot1State.vx += (impulse / mass1) * nx;
@@ -180,4 +180,13 @@ function graduallySlowDown(dotState, deltaTime) {
         dotState.vx *= scale;
         dotState.vy *= scale;
     }
+}
+
+// Function to apply viscosity (air resistance/friction)
+// Reduces velocity by 10% per second (reduced from 25% to allow more arcs)
+function applyViscosity(dotState, deltaTime) {
+    // Reduce velocity by 10% per second: multiply by (1 - 0.1 * deltaTime)
+    const viscosityFactor = 1 - 0.1 * deltaTime;
+    dotState.vx *= viscosityFactor;
+    dotState.vy *= viscosityFactor;
 }

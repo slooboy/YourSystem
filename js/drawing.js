@@ -219,8 +219,8 @@ function drawStarName(x, y, name, opacity = 1.0, objectRadius = null) {
     // Position text just a couple pixels away from the object edge
     // If objectRadius is provided, use it; otherwise default to green star size
     const radius = objectRadius !== null ? objectRadius : (CONFIG.dotRadius * 2);
-    const offsetX = radius + 2; // Just 2 pixels to the right of the object edge
-    const offsetY = radius + 2; // Just 2 pixels below the object edge
+    const offsetX = radius - 3; // 5px closer to center (was radius + 2, now radius - 3)
+    const offsetY = radius - 3; // 5px closer to center (was radius + 2, now radius - 3)
     ctx.fillText(name, x + offsetX, y + offsetY);
     
     ctx.restore();
@@ -423,27 +423,50 @@ function drawOrangeCrescent(x, y, opacity = 1.0) {
 }
 
 function drawComet(x, y, angle, opacity = 1.0) {
-    // Draw a tadpole-shaped comet (translucent pinkish grey)
+    // Draw a comet with a circle head and trailing frilly beard
     // angle: direction the head should point (in radians)
     if (!ctx) return;
     
     ctx.save();
     ctx.globalAlpha = opacity * 0.6; // Translucent (60% opacity)
     
-    // Tadpole shape: head (circle) + tail (elongated shape)
     const headRadius = CONFIG.dotRadius * 0.75;
-    const tailLength = headRadius * 2.5;
-    const tailWidth = headRadius * 0.6;
+    const tailLength = headRadius * 3.5; // Length of the frilly beard
+    const numFrills = 8; // Number of frilly strands
     
     ctx.translate(x, y);
     ctx.rotate(angle);
     
-    // Draw tail first (so head appears on top)
-    ctx.fillStyle = 'rgba(200, 180, 200, 0.6)'; // Pinkish grey
-    ctx.beginPath();
-    // Tail is a teardrop shape pointing backward
-    ctx.ellipse(-headRadius * 0.3, 0, tailLength * 0.8, tailWidth, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Draw frilly beard trailing behind the circle
+    ctx.strokeStyle = 'rgba(200, 180, 200, 0.6)'; // Pinkish grey
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    
+    // Draw multiple wavy/frilly strands
+    for (let i = 0; i < numFrills; i++) {
+        // Distribute frills evenly around the circle (centered on the back)
+        const frillAngle = Math.PI + (i / (numFrills - 1) - 0.5) * Math.PI; // Spread across full back half (180 degrees)
+        const startX = Math.cos(frillAngle) * headRadius;
+        const startY = Math.sin(frillAngle) * headRadius;
+        
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        
+        // Create a wavy/frilly path trailing backward
+        const segments = 6;
+        for (let j = 1; j <= segments; j++) {
+            const t = j / segments;
+            const distance = -tailLength * t; // Negative because trailing backward
+            // Add waviness with sine wave
+            const waveAmplitude = (headRadius * 0.3) * (1 - t * 0.5); // Decreasing amplitude
+            const wavePhase = i * 0.5 + t * 3; // Different phase for each frill
+            const offsetX = Math.sin(wavePhase) * waveAmplitude;
+            const offsetY = Math.cos(wavePhase * 0.7) * waveAmplitude * 0.5;
+            
+            ctx.lineTo(startX + offsetX, startY + offsetY + distance);
+        }
+        ctx.stroke();
+    }
     
     // Draw head (circle)
     ctx.fillStyle = 'rgba(220, 200, 220, 0.7)'; // Slightly lighter pinkish grey for head

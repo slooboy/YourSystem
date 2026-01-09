@@ -198,21 +198,9 @@ function animate() {
     for (let i = 0; i < redDotStates.length; i++) {
         const result = updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 20px/s
-        capVelocity(redDotStates[i], 20);
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(redDotStates[i], deltaTime);
         
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(redDotStates[i], deltaTime);
-        
-        // Apply speed limit after wall collision
-        if (result.wallHit) {
-            reduceVelocityIfTooFast(redDotStates[i]);
-        }
-        
-        // New rule: if there are only 2 red dots and one hits a wall, create a new red dot
-        if (result.wallHit && redDots.length === 2) {
-            newRedDotsToCreate.push(initializeRedDot());
-        }
     }
     
     // Add new red dots after the loop
@@ -223,79 +211,41 @@ function animate() {
     // Update blue dot position using physics (same gravity for all)
     const blueResult = updateDotPosition(blueDotState, CONFIG.gravity, deltaTime);
     
-    // Cap speed at 20px/s
-    capVelocity(blueDotState, 20);
+    // Apply viscosity (reduces speed by 0.5% per second)
+    applyViscosity(blueDotState, deltaTime);
     
-    // Gradually slow down if moving faster than 30px/s
-    graduallySlowDown(blueDotState, deltaTime);
-    
-    // Apply speed limit after wall collision
-    if (blueResult.wallHit) {
-        reduceVelocityIfTooFast(blueDotState);
-    }
     
     // Update all green dots positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < greenDotStates.length; i++) {
         const result = updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 20px/s
-        capVelocity(greenDotStates[i], 20);
-        
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(greenDotStates[i], deltaTime);
-        
-        // Apply speed limit after wall collision
-        if (result.wallHit) {
-            reduceVelocityIfTooFast(greenDotStates[i]);
-        }
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(greenDotStates[i], deltaTime);
     }
     
     // Update all yellow crescents positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         const result = updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 20px/s
-        capVelocity(yellowCrescentStates[i], 20);
-        
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(yellowCrescentStates[i], deltaTime);
-        
-        // Apply speed limit after wall collision
-        if (result.wallHit) {
-            reduceVelocityIfTooFast(yellowCrescentStates[i]);
-        }
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(yellowCrescentStates[i], deltaTime);
     }
     
     // Update all orange crescents positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < orangeCrescentStates.length; i++) {
         const result = updateDotPosition(orangeCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Cap speed at 20px/s
-        capVelocity(orangeCrescentStates[i], 20);
-        
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(orangeCrescentStates[i], deltaTime);
-        
-        // Apply speed limit after wall collision
-        if (result.wallHit) {
-            reduceVelocityIfTooFast(orangeCrescentStates[i]);
-        }
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(orangeCrescentStates[i], deltaTime);
     }
     
     // Update earth position (if earth exists)
     if (earthState && earth) {
         const earthResult = updateDotPosition(earthState, CONFIG.gravity, deltaTime);
         
-        // Cap speed at 20px/s
-        capVelocity(earthState, 20);
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(earthState, deltaTime);
         
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(earthState, deltaTime);
-        
-        // Apply speed limit after wall collision
-        if (earthResult.wallHit) {
-            reduceVelocityIfTooFast(earthState);
-        }
         
         // Update earth object from state
         earth.x = earthState.x;
@@ -314,16 +264,13 @@ function animate() {
         cometStates[i].x += cometStates[i].vx * deltaTime;
         cometStates[i].y += cometStates[i].vy * deltaTime;
         
-        // Cap speed at 20px/s
-        capVelocity(cometStates[i], 20);
-        
-        // Gradually slow down if moving faster than 30px/s
-        graduallySlowDown(cometStates[i], deltaTime);
+        // Apply viscosity (reduces speed by 0.5% per second)
+        applyViscosity(cometStates[i], deltaTime);
         
         // Update time since last red dot creation
         comets[i].lastRedDotTime += deltaTime;
         
-        // Check if it's time to create a new red dot (average every 2 seconds)
+        // Check if it's time to create a new red dot (average every 10 seconds, increased from 2s)
         if (comets[i].lastRedDotTime >= comets[i].nextRedDotInterval) {
             // Calculate perpendicular direction to comet's velocity
             const cometSpeed = Math.sqrt(cometStates[i].vx * cometStates[i].vx + cometStates[i].vy * cometStates[i].vy);
@@ -359,7 +306,7 @@ function animate() {
             
             // Reset timer and generate next interval
             comets[i].lastRedDotTime = 0;
-            comets[i].nextRedDotInterval = -2 * Math.log(Math.random()); // Exponential distribution, average 2 seconds
+            comets[i].nextRedDotInterval = -10 * Math.log(Math.random()); // Exponential distribution, average 10 seconds (increased from 2s)
         }
         
         // Check if comet has hit an edge (disappear instead of bouncing)
@@ -430,9 +377,10 @@ function animate() {
     const redDotsInCloud = new Set(); // Track which red dots are currently in clouds
     const redDotsPlayedSound = new Set(); // Track which red dots have already played the sound this frame
     
-    // First pass: check if blue and green dots are in any cloud
+    // First pass: check if blue, green dots, and earth are in any cloud
     let blueInCloud = false;
     const greenInCloud = new Array(greenDotStates.length).fill(false);
+    let earthInCloud = false;
     
     for (let i = 0; i < clouds.length; i++) {
         const cloud = clouds[i];
@@ -643,6 +591,33 @@ function animate() {
                 greenDots[j].wasInCloud = false;
             }
         }
+        
+        // Check earth (if it exists)
+        if (earthState && earth) {
+            const earthDx = earthState.x - cloud.x;
+            const earthDy = earthState.y - cloud.y;
+            const earthDistance = Math.sqrt(earthDx * earthDx + earthDy * earthDy);
+            if (earthDistance < cloudRadius) {
+                earthInCloud = true; // Earth is in a cloud
+                
+                // Apply momentum change similar to blue dot: 1 in 10 chance to double, otherwise halve
+                if (Math.random() < 0.1) {
+                    earthState.vx *= 2.0;
+                    earthState.vy *= 2.0;
+                } else {
+                    earthState.vx *= 0.5;
+                    earthState.vy *= 0.5;
+                }
+                
+                // Ensure minimum velocity of 0.5px/s
+                const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
+                if (earthSpeed > 0 && earthSpeed < 0.5) {
+                    const scale = 0.5 / earthSpeed;
+                    earthState.vx *= scale;
+                    earthState.vy *= scale;
+                }
+            }
+        }
     }
     
     // Update wasInCloud flags for next frame (after processing all clouds)
@@ -656,7 +631,7 @@ function animate() {
         
         // Earth with red dots
         for (let i = 0; i < redDotStates.length; i++) {
-            if (checkDotCollision(earthState, redDotStates[i], earth.mass, redDots[i].mass, earthRadius, 0.5)) {
+            if (checkDotCollision(earthState, redDotStates[i], earth.mass, redDots[i].mass, earthRadius, redDots[i].radius)) {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
@@ -665,15 +640,13 @@ function animate() {
         }
         
         // Earth with blue dot
-        if (checkDotCollision(earthState, blueDotState, earth.mass, CONFIG.blueMass, earthRadius, CONFIG.collisionRadius)) {
+        const blueDotRadius = CONFIG.dotRadius; // Blue dot planet radius
+        if (checkDotCollision(earthState, blueDotState, earth.mass, CONFIG.blueMass, earthRadius, blueDotRadius)) {
             // Play boing sound for earth collision
             if (typeof playBoing === 'function') {
                 playBoing();
             }
             
-            // Apply speed limit after collision
-            reduceVelocityIfTooFast(earthState);
-            reduceVelocityIfTooFast(blueDotState);
             
             // Ensure minimum velocity to prevent sticking (similar to cloud logic)
             const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
@@ -692,16 +665,14 @@ function animate() {
         }
         
         // Earth with green dots
+        const greenStarRadius = CONFIG.dotRadius * 2; // Green star outer radius
         for (let i = 0; i < greenDotStates.length; i++) {
-            if (checkDotCollision(earthState, greenDotStates[i], earth.mass, greenMass, earthRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(earthState, greenDotStates[i], earth.mass, greenMass, earthRadius, greenStarRadius)) {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(earthState);
-                reduceVelocityIfTooFast(greenDotStates[i]);
                 
                 // Ensure minimum velocity to prevent sticking (similar to cloud logic)
                 const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
@@ -722,7 +693,7 @@ function animate() {
         
         // Earth with yellow crescents
         for (let i = 0; i < yellowCrescentStates.length; i++) {
-            if (checkDotCollision(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, earthRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, earthRadius, yellowCrescents[i].radius)) {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
@@ -732,7 +703,7 @@ function animate() {
         
         // Earth with orange crescents
         for (let i = 0; i < orangeCrescentStates.length; i++) {
-            if (checkDotCollision(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, earthRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, earthRadius, orangeCrescents[i].radius)) {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
@@ -751,20 +722,20 @@ function animate() {
     
     // Red dots with each other (using individual masses and radii)
     // Note: Red-red collisions do NOT count toward splitting
+    const miniRadius = CONFIG.dotRadius / 4; // Define once for this collision section
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = i + 1; j < redDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, 0.5, 0.5)) {
-                // Play guitar D pluck sound for red-red collision
-                if (typeof playGuitarDPluck === 'function') {
+            if (checkDotCollision(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, redDots[i].radius, redDots[j].radius)) {
+                // Check if both are mini-reds - if so, make collision silent
+                const bothAreMinireds = redDots[i].radius === miniRadius && redDots[j].radius === miniRadius;
+                
+                // Play guitar D pluck sound for red-red collision (unless both are mini-reds)
+                if (!bothAreMinireds && typeof playGuitarDPluck === 'function') {
                     playGuitarDPluck();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(redDotStates[i]);
-                reduceVelocityIfTooFast(redDotStates[j]);
                 
                 // Check if both are mini-reds (mini-reds have radius = CONFIG.dotRadius / 4)
-                const miniRadius = CONFIG.dotRadius / 4;
                 if (redDots[i].radius === miniRadius && redDots[j].radius === miniRadius) {
                     const randomValue = Math.random();
                     // 1 in 80 chance (1.25%) to create one mini-red and an orange crescent
@@ -781,16 +752,14 @@ function animate() {
     
     // Red dots with blue dot (using individual masses and radii)
     // These collisions count toward splitting
+    const blueDotRadius = CONFIG.dotRadius; // Blue dot planet radius
     for (let i = 0; i < redDotStates.length; i++) {
-        if (checkDotCollision(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+        if (checkDotCollision(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, redDots[i].radius, blueDotRadius)) {
             // Play piano C# sound for blue-red collision
             if (typeof playPianoCSharp === 'function') {
                 playPianoCSharp();
             }
             
-            // Apply speed limit after collision
-            reduceVelocityIfTooFast(redDotStates[i]);
-            reduceVelocityIfTooFast(blueDotState);
             
             const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
             redDots[i].blueCollisionCount++;
@@ -804,17 +773,15 @@ function animate() {
     
     // Red dots with green dots (using individual masses and radii)
     // These collisions count toward splitting
+    const greenStarRadius = CONFIG.dotRadius * 2; // Green star outer radius
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, 0.5, CONFIG.collisionRadius)) {
+            if (checkDotCollision(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, redDots[i].radius, greenStarRadius)) {
                 // Play violin pizzicato high E sound for red-green collision
                 if (typeof playViolinPizzicatoHighE === 'function') {
                     playViolinPizzicatoHighE();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(redDotStates[i]);
-                reduceVelocityIfTooFast(greenDotStates[j]);
                 
                 const totalCollisions = redDots[i].blueCollisionCount + redDots[i].greenCollisionCount;
                 redDots[i].greenCollisionCount++;
@@ -828,16 +795,15 @@ function animate() {
     }
     
     // Blue with green dots
+    const blueDotRadiusForCollision = CONFIG.dotRadius; // Blue dot planet radius
+    const greenStarRadiusForCollision = CONFIG.dotRadius * 2; // Green star outer radius
     for (let i = 0; i < greenDotStates.length; i++) {
-        if (checkDotCollision(blueDotState, greenDotStates[i], CONFIG.blueMass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+        if (checkDotCollision(blueDotState, greenDotStates[i], CONFIG.blueMass, greenMass, blueDotRadiusForCollision, greenStarRadiusForCollision)) {
             // Play organ F2 sound for blue-green collision
             if (typeof playOrganF2 === 'function') {
                 playOrganF2();
             }
             
-            // Apply speed limit after collision
-            reduceVelocityIfTooFast(blueDotState);
-            reduceVelocityIfTooFast(greenDotStates[i]);
             
             // Apply random 0-0.5 multiplier to blue's y velocity
             const randomMultiplier = Math.random() * 0.5; // Random value between 0 and 0.5
@@ -900,17 +866,15 @@ function animate() {
     }
     
     // Green dots with each other
+    const greenStarRadiusForGreenCollision = CONFIG.dotRadius * 2; // Green star outer radius
     for (let i = 0; i < greenDotStates.length; i++) {
         for (let j = i + 1; j < greenDotStates.length; j++) {
-            if (checkDotCollision(greenDotStates[i], greenDotStates[j], greenMass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(greenDotStates[i], greenDotStates[j], greenMass, greenMass, greenStarRadiusForGreenCollision, greenStarRadiusForGreenCollision)) {
                 // Play harmonica Eb3 sound for green-green collision
                 if (typeof playHarmonicaEb3 === 'function') {
                     playHarmonicaEb3();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(greenDotStates[i]);
-                reduceVelocityIfTooFast(greenDotStates[j]);
                 
                 // Increment collision counters for both green dots
                 greenDots[i].greenCollisionCount++;
@@ -966,45 +930,38 @@ function animate() {
     // Yellow crescents with red dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < redDotStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, CONFIG.collisionRadius, 0.5)) {
+            if (checkDotCollision(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, yellowCrescents[i].radius, redDots[j].radius)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(yellowCrescentStates[i]);
-                reduceVelocityIfTooFast(redDotStates[j]);
             }
         }
     }
     
     // Yellow crescents with blue dot
+    const blueDotRadiusForYellow = CONFIG.dotRadius; // Blue dot planet radius
     for (let i = 0; i < yellowCrescentStates.length; i++) {
-        if (checkDotCollision(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+        if (checkDotCollision(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, yellowCrescents[i].radius, blueDotRadiusForYellow)) {
             // Play tomtom bump sound for yellow crescent collision
             if (typeof playTomtomBump === 'function') {
                 playTomtomBump();
             }
             
-            // Apply speed limit after collision
-            reduceVelocityIfTooFast(yellowCrescentStates[i]);
-            reduceVelocityIfTooFast(blueDotState);
         }
     }
     
     // Yellow crescents with green dots
+    const greenStarRadiusForYellow = CONFIG.dotRadius * 2; // Green star outer radius
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, yellowCrescents[i].radius, greenStarRadiusForYellow)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(yellowCrescentStates[i]);
-                reduceVelocityIfTooFast(greenDotStates[j]);
             }
         }
     }
@@ -1012,15 +969,12 @@ function animate() {
     // Yellow crescents with each other
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = i + 1; j < yellowCrescentStates.length; j++) {
-            if (checkDotCollision(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, CONFIG.collisionRadius, CONFIG.collisionRadius)) {
+            if (checkDotCollision(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, yellowCrescents[i].radius, yellowCrescents[j].radius)) {
                 // Play tomtom bump sound for yellow crescent collision
                 if (typeof playTomtomBump === 'function') {
                     playTomtomBump();
                 }
                 
-                // Apply speed limit after collision
-                reduceVelocityIfTooFast(yellowCrescentStates[i]);
-                reduceVelocityIfTooFast(yellowCrescentStates[j]);
             }
         }
     }
@@ -1268,18 +1222,6 @@ function animate() {
         }
     }
     
-    // If there's only one red dot left, convert a grey cloud into two red dots
-    if (redDots.length === 1 && clouds.length > 0) {
-        // Remove one cloud
-        clouds.splice(0, 1); // Remove the first cloud
-        if (typeof playWoodblockClap === 'function') {
-            playWoodblockClap();
-        }
-        
-        // Create two new red dots at random positions
-        redDots.push(initializeRedDot());
-        redDots.push(initializeRedDot());
-    }
     
     // Auto-reset if there are 1000 or more red dots (including mini-reds)
     if (redDots.length >= 1000) {
@@ -1378,13 +1320,8 @@ function animate() {
                 blueDotState.vx = yellow.vx;
                 blueDotState.vy = yellow.vy;
             } else if (yellow.transformType === 'red') {
-                // Transform to red dot
-                const newRed = initializeRedDot();
-                newRed.x = yellow.x;
-                newRed.y = yellow.y;
-                newRed.vx = yellow.vx;
-                newRed.vy = yellow.vy;
-                redDots.push(newRed);
+                // Transform to red dot - REMOVED to reduce red dot generation
+                // Yellow crescents no longer transform into red dots
             }
             
             // Remove the yellow crescent
@@ -1477,8 +1414,8 @@ function animate() {
                     redDots.splice(index, 1);
                     
                     // Create new object based on random selection
-                    if (objectType < 0.2) {
-                        // 20% chance: red dot
+                    if (objectType < 0.05) {
+                        // 5% chance: red dot (reduced from 20%)
                         const newRed = initializeRedDot();
                         newRed.x = x;
                         newRed.y = y;
@@ -1772,6 +1709,11 @@ function animate() {
         } else {
             // Normal drawing (not dissolving)
             drawYellowCrescent(yellow.x, yellow.y, fadeInOpacity);
+            // Draw yellow crescent name
+            if (yellow.name) {
+                const yellowCrescentRadius = CONFIG.dotRadius * 1.5;
+                drawStarName(yellow.x, yellow.y, yellow.name, fadeInOpacity, yellowCrescentRadius);
+            }
         }
     }
     
@@ -1789,12 +1731,23 @@ function animate() {
         // Combine fade-in and fade-out opacities
         const finalOpacity = fadeInOpacity * fadeOutOpacity;
         drawOrangeCrescent(orange.x, orange.y, finalOpacity);
+        // Draw orange crescent name
+        if (orange.name) {
+            const orangeCrescentRadius = CONFIG.dotRadius * 1.0;
+            drawStarName(orange.x, orange.y, orange.name, finalOpacity, orangeCrescentRadius);
+        }
     }
     
     // Draw earth (if it exists)
     if (earth) {
         const earthFadeInOpacity = earth.fadeInTime !== undefined ? Math.min(earth.fadeInTime / fadeInDuration, 1.0) : 1.0;
         drawEarth(earth.x, earth.y, earthFadeInOpacity);
+        // Draw Earth name
+        if (earthName) {
+            // Earth has radius = CONFIG.dotRadius * 1.0
+            const earthRadius = CONFIG.dotRadius * 1.0;
+            drawStarName(earth.x, earth.y, earthName, earthFadeInOpacity, earthRadius);
+        }
     }
     
     // Draw all comets (head points toward nearest green star)
@@ -1814,13 +1767,14 @@ function animate() {
             }
         }
         
-        // Calculate angle to nearest green star (or use velocity direction if no green stars)
+        // Calculate angle - beard points away from nearest green star, rotated 90 degrees (or use velocity direction if no green stars)
         let angle;
         if (nearestGreen) {
-            angle = Math.atan2(nearestGreen.y - comets[i].y, nearestGreen.x - comets[i].x);
+            // Angle pointing away from green star (opposite direction), then rotate 90 degrees
+            angle = Math.atan2(comets[i].y - nearestGreen.y, comets[i].x - nearestGreen.x) + Math.PI / 2;
         } else {
             // Fallback to velocity direction if no green stars exist
-            angle = Math.atan2(comets[i].vy, comets[i].vx);
+            angle = Math.atan2(comets[i].vy, comets[i].vx) + Math.PI / 2;
         }
         
         drawComet(comets[i].x, comets[i].y, angle, cometOpacity);

@@ -10,9 +10,55 @@ function initializeRedDot() {
     const x = minX + Math.random() * (maxX - minX);
     const y = minY + Math.random() * (maxY - minY);
     
-    // Initial velocity: set to 0
-    const vx = 0;
-    const vy = 0;
+    // Calculate initial tangential velocity based on nearby massive objects
+    let vx = 0;
+    let vy = 0;
+    
+    // Check for nearby blue dot
+    if (typeof blueDotX !== 'undefined' && blueDotX !== null) {
+        const dx = blueDotX - x;
+        const dy = blueDotY - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0 && distance < rectangleWidth * 0.5) {
+            // Calculate tangential direction (perpendicular to radial direction)
+            const radialAngle = Math.atan2(dy, dx);
+            const tangentialAngle = radialAngle + Math.PI / 2; // 90 degrees perpendicular
+            // Tangential velocity magnitude based on distance (closer = faster)
+            const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+            vx = Math.cos(tangentialAngle) * speed;
+            vy = Math.sin(tangentialAngle) * speed;
+        }
+    }
+    
+    // Check for nearby green dots
+    if (typeof greenDots !== 'undefined' && greenDots.length > 0) {
+        for (let i = 0; i < greenDots.length; i++) {
+            const dx = greenDots[i].x - x;
+            const dy = greenDots[i].y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0 && distance < rectangleWidth * 0.5) {
+                const radialAngle = Math.atan2(dy, dx);
+                const tangentialAngle = radialAngle + Math.PI / 2;
+                const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+                vx += Math.cos(tangentialAngle) * speed * 0.5; // Add with 50% weight
+                vy += Math.sin(tangentialAngle) * speed * 0.5;
+            }
+        }
+    }
+    
+    // Check for nearby earth
+    if (typeof earth !== 'undefined' && earth !== null) {
+        const dx = earth.x - x;
+        const dy = earth.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0 && distance < rectangleWidth * 0.5) {
+            const radialAngle = Math.atan2(dy, dx);
+            const tangentialAngle = radialAngle + Math.PI / 2;
+            const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+            vx += Math.cos(tangentialAngle) * speed * 0.5;
+            vy += Math.sin(tangentialAngle) * speed * 0.5;
+        }
+    }
     
     // Return red dot object with position, velocity, mass, radius, collision counts, and trail
     // Decay time: exponential distribution with mean 10 seconds
@@ -184,6 +230,43 @@ function generateBlueDotName() {
     return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+function generateCrescentName() {
+    // Generate name with formula: digit digit digit punctuation mark letter (from any script)
+    const digits = '0123456789';
+    const punctuation = '!?.,;:';
+    
+    // Letters from various scripts (Unicode ranges)
+    // Latin, Greek, Cyrillic, Arabic, Hebrew, Chinese, Japanese, Korean, etc.
+    const letters = [
+        // Latin (A-Z, a-z)
+        ...Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i)), // A-Z
+        ...Array.from({length: 26}, (_, i) => String.fromCharCode(97 + i)), // a-z
+        // Greek
+        'Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ', 'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω',
+        'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω',
+        // Cyrillic
+        'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+        'а', 'б', 'в', 'г', 'д', 'е', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+        // Arabic
+        'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي',
+        // Hebrew
+        'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת',
+        // Chinese/Japanese/Korean (common characters)
+        '中', '日', '本', '韓', '国', '한', '글', '漢', '字', 'ひ', 'ら', 'が', 'な', 'カ', 'タ', 'カ', 'ナ',
+        // Other scripts
+        'Ω', 'α', 'β', 'π', 'Σ', 'Δ', 'λ', 'μ', 'ν', 'ξ', 'ρ', 'τ', 'φ', 'χ', 'ψ'
+    ];
+    
+    // Generate: digit digit digit punctuation letter
+    const digit1 = digits[Math.floor(Math.random() * digits.length)];
+    const digit2 = digits[Math.floor(Math.random() * digits.length)];
+    const digit3 = digits[Math.floor(Math.random() * digits.length)];
+    const punct = punctuation[Math.floor(Math.random() * punctuation.length)];
+    const letter = letters[Math.floor(Math.random() * letters.length)];
+    
+    return digit1 + digit2 + digit3 + punct + letter;
+}
+
 function initializeGreenDot() {
     const minX = rectangleX + CONFIG.margin;
     const maxX = rectangleX + rectangleWidth - CONFIG.margin;
@@ -194,9 +277,53 @@ function initializeGreenDot() {
     const x = minX + Math.random() * (maxX - minX);
     const y = minY + Math.random() * (maxY - minY);
     
-    // Initial velocity: set to 0
-    const vx = 0;
-    const vy = 0;
+    // Calculate initial tangential velocity based on nearby massive objects
+    let vx = 0;
+    let vy = 0;
+    
+    // Check for nearby blue dot
+    if (typeof blueDotX !== 'undefined' && blueDotX !== null) {
+        const dx = blueDotX - x;
+        const dy = blueDotY - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0 && distance < rectangleWidth * 0.5) {
+            const radialAngle = Math.atan2(dy, dx);
+            const tangentialAngle = radialAngle + Math.PI / 2;
+            const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+            vx = Math.cos(tangentialAngle) * speed;
+            vy = Math.sin(tangentialAngle) * speed;
+        }
+    }
+    
+    // Check for nearby earth
+    if (typeof earth !== 'undefined' && earth !== null) {
+        const dx = earth.x - x;
+        const dy = earth.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0 && distance < rectangleWidth * 0.5) {
+            const radialAngle = Math.atan2(dy, dx);
+            const tangentialAngle = radialAngle + Math.PI / 2;
+            const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+            vx += Math.cos(tangentialAngle) * speed * 0.5;
+            vy += Math.sin(tangentialAngle) * speed * 0.5;
+        }
+    }
+    
+    // Check for other nearby green dots
+    if (typeof greenDots !== 'undefined' && greenDots.length > 0) {
+        for (let i = 0; i < greenDots.length; i++) {
+            const dx = greenDots[i].x - x;
+            const dy = greenDots[i].y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0 && distance < rectangleWidth * 0.5) {
+                const radialAngle = Math.atan2(dy, dx);
+                const tangentialAngle = radialAngle + Math.PI / 2;
+                const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+                vx += Math.cos(tangentialAngle) * speed * 0.3;
+                vy += Math.sin(tangentialAngle) * speed * 0.3;
+            }
+        }
+    }
     
     // Return green dot object with position, velocity, trail, antigravity state, and cloud time
     return {
@@ -303,7 +430,8 @@ function initializeYellowCrescent(x, y) {
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         decayTime: 0, // Time since creation (radioactive decay, 0 to 10 seconds)
         dissolveTime: -1, // Time in dissolve transition (0 to 0.5 seconds, -1 if not dissolving)
-        transformType: null // 'blue' or 'red' - set when decay completes
+        transformType: null, // 'blue' or 'red' - set when decay completes
+        name: generateCrescentName() // Generate a unique name for this crescent
     };
 }
 
@@ -316,8 +444,42 @@ function initializeEarth() {
     const x = minX + Math.random() * (maxX - minX);
     const y = minY + Math.random() * (maxY - minY);
     
-    const vx = 0;
-    const vy = 0;
+    // Calculate initial tangential velocity based on nearby massive objects
+    let vx = 0;
+    let vy = 0;
+    
+    // Check for nearby blue dot
+    if (typeof blueDotX !== 'undefined' && blueDotX !== null) {
+        const dx = blueDotX - x;
+        const dy = blueDotY - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0 && distance < rectangleWidth * 0.5) {
+            const radialAngle = Math.atan2(dy, dx);
+            const tangentialAngle = radialAngle + Math.PI / 2;
+            const speed = Math.min(10, 20 * (1 - distance / (rectangleWidth * 0.5)));
+            vx = Math.cos(tangentialAngle) * speed;
+            vy = Math.sin(tangentialAngle) * speed;
+        }
+    }
+    
+    // Check for nearby green dots
+    if (typeof greenDots !== 'undefined' && greenDots.length > 0) {
+        for (let i = 0; i < greenDots.length; i++) {
+            const dx = greenDots[i].x - x;
+            const dy = greenDots[i].y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0 && distance < rectangleWidth * 0.5) {
+                const radialAngle = Math.atan2(dy, dx);
+                const tangentialAngle = radialAngle + Math.PI / 2;
+                const speed = Math.min(10, 20 * (1 - distance / (rectangleWidth * 0.5)));
+                vx += Math.cos(tangentialAngle) * speed * 0.5;
+                vy += Math.sin(tangentialAngle) * speed * 0.5;
+            }
+        }
+    }
+    
+    // Generate Earth name in a random language
+    earthName = generateEarthName();
     
     return {
         x: x,
@@ -383,7 +545,7 @@ function initializeComet() {
         radius: CONFIG.dotRadius * 0.75, // Slightly smaller than red dot
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         lastRedDotTime: 0, // Time since last red dot was created
-        nextRedDotInterval: -2 * Math.log(Math.random()) // Exponential distribution, average 2 seconds
+        nextRedDotInterval: -10 * Math.log(Math.random()) // Exponential distribution, average 10 seconds (increased from 2s)
     };
 }
 
@@ -399,7 +561,8 @@ function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
         radius: CONFIG.dotRadius * 1.0, // Reduced by 1/3 (was 1.5, now 1.0)
         fadeInTime: 0, // Time since creation (for fade-in effect, 0 to 1.0 seconds)
         decayTime: 0, // Time since creation (radioactive decay, 0 to 5 seconds half-life)
-        fadeOutTime: -1 // Time remaining for fade-out (-1 = not fading, >= 0 = fading out)
+        fadeOutTime: -1, // Time remaining for fade-out (-1 = not fading, >= 0 = fading out)
+        name: generateCrescentName() // Generate a unique name for this crescent
     };
 }
 
@@ -693,6 +856,51 @@ const languageOrder = [
     'ancientGreek', 'arabic', 'farsi', 'tamil', 'frenchBraille'
 ];
 
+function generateEarthName() {
+    // Translations of "Earth" in various languages
+    const earthTranslations = {
+        english: 'Earth',
+        spanish: 'Tierra',
+        catalan: 'Terra',
+        italian: 'Terra',
+        german: 'Erde',
+        czech: 'Země',
+        japanese: '地球',
+        hindi: 'पृथ्वी',
+        simplifiedChinese: '地球',
+        hawaiian: 'Honua',
+        swedish: 'Jorden',
+        danish: 'Jorden',
+        icelandic: 'Jörð',
+        oldNorse: 'Jörð',
+        walloon: 'Tere',
+        basque: 'Lurra',
+        frisian: 'Ierde',
+        dutch: 'Aarde',
+        ukrainian: 'Земля',
+        bulgarian: 'Земя',
+        armenian: 'Երկիր',
+        galician: 'Terra',
+        portuguese: 'Terra',
+        irish: 'An Domhan',
+        zulu: 'Umhlaba',
+        afrikaans: 'Aarde',
+        finnish: 'Maa',
+        estonian: 'Maa',
+        ancientGreek: 'Γῆ',
+        arabic: 'الأرض',
+        farsi: 'زمین',
+        tamil: 'பூமி',
+        frenchBraille: 'Terre'
+    };
+    
+    // Pick a random language from the language order list
+    const randomIndex = Math.floor(Math.random() * languageOrder.length);
+    const selectedLanguage = languageOrder[randomIndex];
+    
+    return earthTranslations[selectedLanguage] || earthTranslations.english;
+}
+
 // Function to adjust title font size to fit on two lines
 function adjustTitleFontSize(titleElement) {
     titleElement.style.fontSize = ''; // Reset to default
@@ -844,6 +1052,12 @@ function resetSimulation() {
     antigravityTextShown = false;
     antigravityTextTime = -1;
     
+    // Reinitialize blue dot with random position (do this first so other objects can use it for tangential velocity)
+    initializeBlueDot();
+    
+    // Initialize earth at the start (do this early so other objects can use it for tangential velocity)
+    earth = initializeEarth();
+    
     // Initialize random number of red dots (2 to 8)
     const numRedDots = Math.floor(Math.random() * 7) + 2; // Random number from 2 to 8
     for (let i = 0; i < numRedDots; i++) {
@@ -858,12 +1072,6 @@ function resetSimulation() {
     for (let i = 0; i < numGreenDots; i++) {
         greenDots.push(initializeGreenDot());
     }
-    
-    // Reinitialize blue dot with random position
-    initializeBlueDot();
-    
-    // Initialize earth at the start
-    earth = initializeEarth();
     
     // Initialize one cloud at the start
     clouds.push(initializeCloud());

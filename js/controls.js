@@ -38,12 +38,12 @@ if (Math.random() < 0.1) {
 }
 
 // Set initial G value display
-gravityValue.textContent = (G / 10000).toFixed(2);
+gravityValue.textContent = (G / 100).toFixed(2);
 
 // Set up gravitational constant control
 gravityControl.addEventListener('input', function() {
     G = parseFloat(this.value);
-    gravityValue.textContent = (G / 10000).toFixed(2);
+    gravityValue.textContent = (G / 100).toFixed(2);
 });
 
 // Set up audio volume control

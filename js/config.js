@@ -12,7 +12,7 @@ const CONFIG = {
     gravity: 0, // pixels per second squared (disabled - no downward gravity)
     
     // Gravitational constant for inter-object attraction
-    initialG: 100000, // gravitational constant (pixels^3 / (mass * second^2))
+    initialG: 100, // gravitational constant (pixels^3 / (mass * second^2)) - reduced to 1/100 of previous value (was 10000)
     
     // Mass properties (affects collisions and gravitational attraction)
     redMass: 1, // base mass
