@@ -59,19 +59,19 @@ function animate() {
     // Red dots with each other (using individual masses)
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = i + 1; j < redDotStates.length; j++) {
-            applyGravitationalForce(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, deltaTime);
+            applyGravitationalForce(redDotStates[i], redDotStates[j], redDots[i].mass, redDots[j].mass, deltaTime, redDots[i].antigravityActive, redDots[j].antigravityActive);
         }
     }
     
     // Red dots with blue dot
     for (let i = 0; i < redDotStates.length; i++) {
-        applyGravitationalForce(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        applyGravitationalForce(redDotStates[i], blueDotState, redDots[i].mass, CONFIG.blueMass, deltaTime, redDots[i].antigravityActive, blueAntigravityActive);
     }
     
     // Red dots with green dots
     for (let i = 0; i < redDotStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            applyGravitationalForce(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+            applyGravitationalForce(redDotStates[i], greenDotStates[j], redDots[i].mass, greenMass, deltaTime, redDots[i].antigravityActive, greenDots[j].antigravityActive);
         }
     }
     
@@ -90,26 +90,26 @@ function animate() {
     // Yellow crescents with red dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < redDotStates.length; j++) {
-            applyGravitationalForce(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, deltaTime);
+            applyGravitationalForce(yellowCrescentStates[i], redDotStates[j], yellowCrescents[i].mass, redDots[j].mass, deltaTime, yellowCrescents[i].antigravityActive, redDots[j].antigravityActive);
         }
     }
     
     // Yellow crescents with blue dot
     for (let i = 0; i < yellowCrescentStates.length; i++) {
-        applyGravitationalForce(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
+        applyGravitationalForce(yellowCrescentStates[i], blueDotState, yellowCrescents[i].mass, CONFIG.blueMass, deltaTime, yellowCrescents[i].antigravityActive, blueAntigravityActive);
     }
     
     // Yellow crescents with green dots
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = 0; j < greenDotStates.length; j++) {
-            applyGravitationalForce(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, deltaTime, false, greenDots[j].antigravityActive);
+            applyGravitationalForce(yellowCrescentStates[i], greenDotStates[j], yellowCrescents[i].mass, greenMass, deltaTime, yellowCrescents[i].antigravityActive, greenDots[j].antigravityActive);
         }
     }
     
     // Yellow crescents with each other
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         for (let j = i + 1; j < yellowCrescentStates.length; j++) {
-            applyGravitationalForce(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, deltaTime);
+            applyGravitationalForce(yellowCrescentStates[i], yellowCrescentStates[j], yellowCrescents[i].mass, yellowCrescents[j].mass, deltaTime, yellowCrescents[i].antigravityActive, yellowCrescents[j].antigravityActive);
         }
     }
     
@@ -117,7 +117,7 @@ function animate() {
     if (earthState && earth) {
         // Earth with red dots
         for (let i = 0; i < redDotStates.length; i++) {
-            applyGravitationalForce(earthState, redDotStates[i], earth.mass, redDots[i].mass, deltaTime);
+            applyGravitationalForce(earthState, redDotStates[i], earth.mass, redDots[i].mass, deltaTime, false, redDots[i].antigravityActive);
         }
         // Earth with blue dot
         applyGravitationalForce(earthState, blueDotState, earth.mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
@@ -127,11 +127,11 @@ function animate() {
         }
         // Earth with yellow crescents
         for (let i = 0; i < yellowCrescentStates.length; i++) {
-            applyGravitationalForce(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, deltaTime);
+            applyGravitationalForce(earthState, yellowCrescentStates[i], earth.mass, yellowCrescents[i].mass, deltaTime, false, yellowCrescents[i].antigravityActive);
         }
         // Earth with orange crescents
         for (let i = 0; i < orangeCrescentStates.length; i++) {
-            applyGravitationalForce(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, deltaTime);
+            applyGravitationalForce(earthState, orangeCrescentStates[i], earth.mass, orangeCrescents[i].mass, deltaTime, false, orangeCrescents[i].antigravityActive);
         }
         // Earth with clouds
         for (let i = 0; i < clouds.length; i++) {
@@ -157,11 +157,11 @@ function animate() {
         }
         // Comets with yellow crescents
         for (let j = 0; j < yellowCrescentStates.length; j++) {
-            applyGravitationalForce(cometStates[i], yellowCrescentStates[j], comets[i].mass, yellowCrescents[j].mass, deltaTime);
+            applyGravitationalForce(cometStates[i], yellowCrescentStates[j], comets[i].mass, yellowCrescents[j].mass, deltaTime, false, yellowCrescents[j].antigravityActive);
         }
         // Comets with orange crescents
         for (let j = 0; j < orangeCrescentStates.length; j++) {
-            applyGravitationalForce(cometStates[i], orangeCrescentStates[j], comets[i].mass, orangeCrescents[j].mass, deltaTime);
+            applyGravitationalForce(cometStates[i], orangeCrescentStates[j], comets[i].mass, orangeCrescents[j].mass, deltaTime, false, orangeCrescents[j].antigravityActive);
         }
         // Comets with earth
         if (earthState) {
@@ -182,7 +182,7 @@ function animate() {
         
         // Clouds with red dots (using individual masses)
         for (let j = 0; j < redDotStates.length; j++) {
-            applyGravitationalForce(cloudState, redDotStates[j], cloud.mass, redDots[j].mass, deltaTime);
+            applyGravitationalForce(cloudState, redDotStates[j], cloud.mass, redDots[j].mass, deltaTime, false, redDots[j].antigravityActive);
         }
         // Clouds with blue dot
         applyGravitationalForce(cloudState, blueDotState, cloud.mass, CONFIG.blueMass, deltaTime, false, blueAntigravityActive);
@@ -302,6 +302,8 @@ function animate() {
             newRedDot.y = comets[i].y + perpY * offsetDistance;
             newRedDot.vx = 0; // Initial velocity of 0
             newRedDot.vy = 0; // Initial velocity of 0
+            newRedDot.parentCometIndex = i; // Track parent comet for antigravity
+            newRedDot.antigravityActive = true; // Start with antigravity active (within 100px)
             redDots.push(newRedDot);
             
             // Reset timer and generate next interval
@@ -636,6 +638,13 @@ function animate() {
                 if (typeof playBoing === 'function') {
                     playBoing();
                 }
+                
+                // Activate antigravity for red dot (3 seconds)
+                if (!redDots[i].antigravityActive) {
+                    redDots[i].antigravityActive = true;
+                    redDots[i].antigravityTimeRemaining = 3.0;
+                    redDots[i].lastWindchimeTime = 0;
+                }
             }
         }
         
@@ -647,6 +656,12 @@ function animate() {
                 playBoing();
             }
             
+            // Activate antigravity for blue dot (3 seconds)
+            if (!blueAntigravityActive) {
+                blueAntigravityActive = true;
+                blueAntigravityTimeRemaining = 3.0;
+                lastBlueWindchimeTime = 0;
+            }
             
             // Ensure minimum velocity to prevent sticking (similar to cloud logic)
             const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
@@ -673,6 +688,12 @@ function animate() {
                     playBoing();
                 }
                 
+                // Activate antigravity for green dot (3 seconds)
+                if (!greenDots[i].antigravityActive) {
+                    greenDots[i].antigravityActive = true;
+                    greenDots[i].antigravityTimeRemaining = 3.0;
+                    greenDots[i].lastWindchimeTime = 0;
+                }
                 
                 // Ensure minimum velocity to prevent sticking (similar to cloud logic)
                 const earthSpeed = Math.sqrt(earthState.vx * earthState.vx + earthState.vy * earthState.vy);
@@ -698,6 +719,13 @@ function animate() {
                 if (typeof playBoing === 'function') {
                     playBoing();
                 }
+                
+                // Activate antigravity for yellow crescent (3 seconds)
+                if (!yellowCrescents[i].antigravityActive) {
+                    yellowCrescents[i].antigravityActive = true;
+                    yellowCrescents[i].antigravityTimeRemaining = 3.0;
+                    yellowCrescents[i].lastWindchimeTime = 0;
+                }
             }
         }
         
@@ -707,6 +735,13 @@ function animate() {
                 // Play boing sound for earth collision
                 if (typeof playBoing === 'function') {
                     playBoing();
+                }
+                
+                // Activate antigravity for orange crescent (3 seconds)
+                if (!orangeCrescents[i].antigravityActive) {
+                    orangeCrescents[i].antigravityActive = true;
+                    orangeCrescents[i].antigravityTimeRemaining = 3.0;
+                    orangeCrescents[i].lastWindchimeTime = 0;
                 }
             }
         }
@@ -1246,6 +1281,68 @@ function animate() {
                         playWindchime();
                     }
                     greenDots[i].lastWindchimeTime = currentTime;
+                }
+            }
+        }
+    }
+    
+    // Update red dots antigravity timers
+    for (let i = 0; i < redDots.length; i++) {
+        // Skip antigravity timer update for comet-spawned red dots (they use distance-based antigravity)
+        if (redDots[i].parentCometIndex !== undefined) {
+            continue;
+        }
+        
+        if (redDots[i].antigravityActive) {
+            redDots[i].antigravityTimeRemaining -= deltaTime;
+            if (redDots[i].antigravityTimeRemaining <= 0) {
+                redDots[i].antigravityActive = false;
+                redDots[i].antigravityTimeRemaining = 0;
+            } else {
+                // Play windchime sound periodically while antigravity is active
+                if (currentTime - redDots[i].lastWindchimeTime >= windchimeInterval) {
+                    if (typeof playWindchime === 'function') {
+                        playWindchime();
+                    }
+                    redDots[i].lastWindchimeTime = currentTime;
+                }
+            }
+        }
+    }
+    
+    // Update yellow crescents antigravity timers
+    for (let i = 0; i < yellowCrescents.length; i++) {
+        if (yellowCrescents[i].antigravityActive) {
+            yellowCrescents[i].antigravityTimeRemaining -= deltaTime;
+            if (yellowCrescents[i].antigravityTimeRemaining <= 0) {
+                yellowCrescents[i].antigravityActive = false;
+                yellowCrescents[i].antigravityTimeRemaining = 0;
+            } else {
+                // Play windchime sound periodically while antigravity is active
+                if (currentTime - yellowCrescents[i].lastWindchimeTime >= windchimeInterval) {
+                    if (typeof playWindchime === 'function') {
+                        playWindchime();
+                    }
+                    yellowCrescents[i].lastWindchimeTime = currentTime;
+                }
+            }
+        }
+    }
+    
+    // Update orange crescents antigravity timers
+    for (let i = 0; i < orangeCrescents.length; i++) {
+        if (orangeCrescents[i].antigravityActive) {
+            orangeCrescents[i].antigravityTimeRemaining -= deltaTime;
+            if (orangeCrescents[i].antigravityTimeRemaining <= 0) {
+                orangeCrescents[i].antigravityActive = false;
+                orangeCrescents[i].antigravityTimeRemaining = 0;
+            } else {
+                // Play windchime sound periodically while antigravity is active
+                if (currentTime - orangeCrescents[i].lastWindchimeTime >= windchimeInterval) {
+                    if (typeof playWindchime === 'function') {
+                        playWindchime();
+                    }
+                    orangeCrescents[i].lastWindchimeTime = currentTime;
                 }
             }
         }
