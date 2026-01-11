@@ -30,6 +30,11 @@ function shouldShowAntigravityText(x, y) {
 }
 
 function animate() {
+    // Check if paused - if so, don't update anything and don't schedule next frame
+    if (isPaused) {
+        return;
+    }
+    
     // Ensure context is initialized
     if (!ensureContext()) {
         requestAnimationFrame(animate);
@@ -227,8 +232,7 @@ function animate() {
     for (let i = 0; i < redDotStates.length; i++) {
         const result = updateDotPosition(redDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(redDotStates[i], deltaTime);
+        // Viscosity removed to allow more orbital motion
         
     }
     
@@ -240,40 +244,35 @@ function animate() {
     // Update blue dot position using physics (same gravity for all)
     const blueResult = updateDotPosition(blueDotState, CONFIG.gravity, deltaTime);
     
-    // Apply viscosity (reduces speed by 0.5% per second)
-    applyViscosity(blueDotState, deltaTime);
+    // Viscosity removed to allow more orbital motion
     
     
     // Update all green dots positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < greenDotStates.length; i++) {
         const result = updateDotPosition(greenDotStates[i], CONFIG.gravity, deltaTime);
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(greenDotStates[i], deltaTime);
+        // Viscosity removed to allow more orbital motion
     }
     
     // Update all yellow crescents positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < yellowCrescentStates.length; i++) {
         const result = updateDotPosition(yellowCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(yellowCrescentStates[i], deltaTime);
+        // Viscosity removed to allow more orbital motion
     }
     
     // Update all orange crescents positions (using the state objects that have accumulated gravitational forces)
     for (let i = 0; i < orangeCrescentStates.length; i++) {
         const result = updateDotPosition(orangeCrescentStates[i], CONFIG.gravity, deltaTime);
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(orangeCrescentStates[i], deltaTime);
+        // Viscosity removed to allow more orbital motion
     }
     
     // Update earth position (if earth exists)
     if (earthState && earth) {
         const earthResult = updateDotPosition(earthState, CONFIG.gravity, deltaTime);
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(earthState, deltaTime);
+        // Viscosity removed to allow more orbital motion
         
         
         // Update earth object from state
@@ -293,8 +292,7 @@ function animate() {
         cometStates[i].x += cometStates[i].vx * deltaTime;
         cometStates[i].y += cometStates[i].vy * deltaTime;
         
-        // Apply viscosity (reduces speed by 0.5% per second)
-        applyViscosity(cometStates[i], deltaTime);
+        // Viscosity removed to allow more orbital motion
         
         // Update time since last red dot creation
         comets[i].lastRedDotTime += deltaTime;

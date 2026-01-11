@@ -23,8 +23,8 @@ function initializeRedDot() {
             // Calculate tangential direction (perpendicular to radial direction)
             const radialAngle = Math.atan2(dy, dx);
             const tangentialAngle = radialAngle + Math.PI / 2; // 90 degrees perpendicular
-            // Tangential velocity magnitude based on distance (closer = faster)
-            const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+            // Tangential velocity magnitude based on distance (closer = faster) - doubled for more orbital motion
+            const speed = Math.min(30, 60 * (1 - distance / (rectangleWidth * 0.5)));
             vx = Math.cos(tangentialAngle) * speed;
             vy = Math.sin(tangentialAngle) * speed;
         }
@@ -39,7 +39,7 @@ function initializeRedDot() {
             if (distance > 0 && distance < rectangleWidth * 0.5) {
                 const radialAngle = Math.atan2(dy, dx);
                 const tangentialAngle = radialAngle + Math.PI / 2;
-                const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+                const speed = Math.min(30, 60 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
                 vx += Math.cos(tangentialAngle) * speed * 0.5; // Add with 50% weight
                 vy += Math.sin(tangentialAngle) * speed * 0.5;
             }
@@ -54,7 +54,7 @@ function initializeRedDot() {
         if (distance > 0 && distance < rectangleWidth * 0.5) {
             const radialAngle = Math.atan2(dy, dx);
             const tangentialAngle = radialAngle + Math.PI / 2;
-            const speed = Math.min(15, 30 * (1 - distance / (rectangleWidth * 0.5)));
+            const speed = Math.min(30, 60 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
             vx += Math.cos(tangentialAngle) * speed * 0.5;
             vy += Math.sin(tangentialAngle) * speed * 0.5;
         }
@@ -308,7 +308,7 @@ function initializeGreenDot() {
         if (distance > 0 && distance < rectangleWidth * 0.5) {
             const radialAngle = Math.atan2(dy, dx);
             const tangentialAngle = radialAngle + Math.PI / 2;
-            const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+            const speed = Math.min(24, 50 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
             vx = Math.cos(tangentialAngle) * speed;
             vy = Math.sin(tangentialAngle) * speed;
         }
@@ -322,7 +322,7 @@ function initializeGreenDot() {
         if (distance > 0 && distance < rectangleWidth * 0.5) {
             const radialAngle = Math.atan2(dy, dx);
             const tangentialAngle = radialAngle + Math.PI / 2;
-            const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+            const speed = Math.min(24, 50 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
             vx += Math.cos(tangentialAngle) * speed * 0.5;
             vy += Math.sin(tangentialAngle) * speed * 0.5;
         }
@@ -337,7 +337,7 @@ function initializeGreenDot() {
             if (distance > 0 && distance < rectangleWidth * 0.5) {
                 const radialAngle = Math.atan2(dy, dx);
                 const tangentialAngle = radialAngle + Math.PI / 2;
-                const speed = Math.min(12, 25 * (1 - distance / (rectangleWidth * 0.5)));
+                const speed = Math.min(24, 50 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
                 vx += Math.cos(tangentialAngle) * speed * 0.3;
                 vy += Math.sin(tangentialAngle) * speed * 0.3;
             }
@@ -488,7 +488,7 @@ function initializeEarth() {
         if (distance > 0 && distance < rectangleWidth * 0.5) {
             const radialAngle = Math.atan2(dy, dx);
             const tangentialAngle = radialAngle + Math.PI / 2;
-            const speed = Math.min(10, 20 * (1 - distance / (rectangleWidth * 0.5)));
+            const speed = Math.min(20, 40 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
             vx = Math.cos(tangentialAngle) * speed;
             vy = Math.sin(tangentialAngle) * speed;
         }
@@ -503,7 +503,7 @@ function initializeEarth() {
             if (distance > 0 && distance < rectangleWidth * 0.5) {
                 const radialAngle = Math.atan2(dy, dx);
                 const tangentialAngle = radialAngle + Math.PI / 2;
-                const speed = Math.min(10, 20 * (1 - distance / (rectangleWidth * 0.5)));
+                const speed = Math.min(20, 40 * (1 - distance / (rectangleWidth * 0.5))); // Doubled for more orbital motion
                 vx += Math.cos(tangentialAngle) * speed * 0.5;
                 vy += Math.sin(tangentialAngle) * speed * 0.5;
             }
@@ -619,41 +619,41 @@ function initializeOrangeCrescent(x, y, vx = 0, vy = 0) {
     };
 }
 
-// Title translations (with proper capitalization for each language)
+// Title translations (sentence case - only first letter capitalized)
 const titleTranslations = {
-    english: "If a Video Game Designer Had Made the Solar System",
-    spanish: "Si un Diseñador de Videojuegos Hubiera Hecho el Sistema Solar",
-    catalan: "Si un Dissenyador de Videojocs Hagués Fet el Sistema Solar",
-    italian: "Se un Progettista di Videogiochi Avesse Fatto il Sistema Solare",
-    german: "Wenn ein Videospiel-Designer das Sonnensystem Gemacht Hätte",
-    czech: "Kdyby Návrhář Videoher Udělal Sluneční Soustavu",
+    english: "If a video game designer had made the Solar System",
+    spanish: "Si un diseñador de videojuegos hubiera hecho el Sistema Solar",
+    catalan: "Si un dissenyador de videojocs hagués fet el Sistema Solar",
+    italian: "Se un progettista di videogiochi avesse fatto il Sistema Solare",
+    german: "Wenn ein Videospiel-Designer das Sonnensystem gemacht hätte",
+    czech: "Kdyby návrhář videoher udělal sluneční soustavu",
     japanese: "もしビデオゲームデザイナーが太陽系を作っていたら",
     hindi: "यदि एक वीडियो गेम डिज़ाइनर ने सौर मंडल बनाया होता",
     simplifiedChinese: "如果视频游戏设计师创造了太阳系",
-    hawaiian: "Inā Ua Hana Kekahi Mea Hoʻolālā Pāʻani Wikiō i ka Pōʻai Lā",
-    swedish: "Om en Speldesigner Hade Skapat Solsystemet",
-    danish: "Hvis en Spildesigner Havde Lavet Solsystemet",
-    icelandic: "Ef Tölvuleikjahönnuður Hefði Búið Til Sólkerfið",
-    oldNorse: "Ef Leikjaskapari Hafa Gjört Sólkerfið",
-    walloon: "Si on Dizeu d' Djeus Vidèyo Åreut Fait l' Sisteme Solrece",
-    basque: "Bideo-joko Diseinatzaile Batek Eguzki Sistema Egin Izu Balu",
-    frisian: "As in Fideospultsje-Ûntwerper it Sinnestelsel Makke Hie",
-    dutch: "Als een Videogameontwerper het Zonnestelsel Had Gemaakt",
-    ukrainian: "Якби Дизайнер Відеоігор Створив Сонячну Систему",
-    bulgarian: "Ако Дизайнер на Видеоигри Направи Слънчевата Система",
-    armenian: "Եթե Վիդեո Խաղերի Դիզայներն Էր Ստեղծել Արեգակնային Համակարգը",
-    galician: "Se un Deseñador de Videoxogos Fixera o Sistema Solar",
-    portuguese: "Se um Designer de Videogames Tivesse Feito o Sistema Solar",
-    irish: "Dá mBa Dhearadh Cluiche Físeáin a Rinne an Córas Gréine",
-    zulu: "Uma Umklami Wevidiyo Game Wayenze Isistimu Yelanga",
-    afrikaans: "As 'n Videospeletjie-Ontwerper die Sonnestelsel Gemaak Het",
-    finnish: "Jos Videopelisuunnittelija Olisi Tehnyt Aurinkokunnan",
-    estonian: "Kui Videomängu Disainer Oleks Loonud Päikesesüsteemi",
-    ancientGreek: "Εἰ ὁ Βιδεοπαιγνίου Δημιουργὸς τὸν Ἠλιακὸν Σύστημα Ἐποίησεν",
+    hawaiian: "Inā ua hana kekahi mea hoʻolālā pāʻani wikiō i ka pōʻai lā",
+    swedish: "Om en speldesigner hade skapat solsystemet",
+    danish: "Hvis en spildesigner havde lavet solsystemet",
+    icelandic: "Ef tölvuleikjahönnuður hefði búið til sólkerfið",
+    oldNorse: "Ef leikjaskapari hafa gjört sólkerfið",
+    walloon: "Si on dizeu d' djeus vidèyo åreut fait l' sisteme solrece",
+    basque: "Bideo-joko diseinatzaile batek eguzki sistema egin izu balu",
+    frisian: "As in fideospultsje-ûntwerper it sinnestelsel makke hie",
+    dutch: "Als een videogameontwerper het zonnestelsel had gemaakt",
+    ukrainian: "Якби дизайнер відеоігор створив сонячну систему",
+    bulgarian: "Ако дизайнер на видеоигри направи слънчевата система",
+    armenian: "Եթե վիդեո խաղերի դիզայներն էր ստեղծել արեգակնային համակարգը",
+    galician: "Se un deseñador de videoxogos fixera o Sistema Solar",
+    portuguese: "Se um designer de videogames tivesse feito o Sistema Solar",
+    irish: "Dá mba dhearadh cluiche físeáin a rinne an córas gréine",
+    zulu: "Uma umklami wevidiyo game wayenze isistimu yelanga",
+    afrikaans: "As 'n videospeletjie-ontwerper die sonnestelsel gemaak het",
+    finnish: "Jos videopelisuunnittelija olisi tehnyt aurinkokunnan",
+    estonian: "Kui videomängu disainer oleks loonud päikesesüsteemi",
+    ancientGreek: "Εἰ ὁ βιδεοπαιγνίου δημιουργὸς τὸν ἠλιακὸν σύστημα ἐποίησεν",
     arabic: "لو أن مصمم ألعاب فيديو صنع النظام الشمسي",
     farsi: "اگر یک طراح بازی ویدیویی منظومه شمسی را ساخته بود",
     tamil: "ஒரு வீடியோ கேம் வடிவமைப்பாளர் சூரிய மண்டலத்தை உருவாக்கியிருந்தால்",
-    frenchBraille: "Si un Concepteur de Jeux Vidéo Avait Créé le Système Solaire"
+    frenchBraille: "Si un concepteur de jeux vidéo avait créé le Système Solaire"
 };
 
 // Random quotations from Einstein, Newton, and David Bowie's 'Life on Mars'

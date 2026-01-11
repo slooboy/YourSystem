@@ -115,9 +115,9 @@ function checkDotCollision(dot1State, dot2State, mass1, mass2, radius1, radius2)
         
         // Only resolve collision if dots are moving towards each other
         if (relativeSpeed < 0) {
-            // Elastic collision response for different masses (reduced impulse to allow more arcs)
-            // Impulse: J = 1.5 * m1 * m2 * v_rel_n / (m1 + m2) (reduced from 2.0 to 1.5 for less disruption)
-            const impulse = 1.5 * mass1 * mass2 * relativeSpeed / (mass1 + mass2);
+            // Elastic collision response for different masses (reduced impulse to allow more orbital motion)
+            // Impulse: J = 1.0 * m1 * m2 * v_rel_n / (m1 + m2) (reduced from 1.5 to 1.0 for even less disruption)
+            const impulse = 1.0 * mass1 * mass2 * relativeSpeed / (mass1 + mass2);
             
             // Apply impulse to dot1: v1' = v1 + J/m1 * n
             dot1State.vx += (impulse / mass1) * nx;

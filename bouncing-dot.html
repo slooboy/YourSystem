@@ -12,15 +12,15 @@
 <body>
     <div class="container">
         <div class="title-container">
-            <h1>If a Video Game Designer Had Made the Solar System</h1>
+            <h1>If a video game designer had made the Solar System</h1>
         </div>
         <canvas id="canvas"></canvas>
         <div class="info">
             <div class="controls-wrapper">
                 <div class="control-group">
                     <label for="gravityControl">Gravitational Constant (G):</label>
-                    <input type="range" id="gravityControl" min="0" max="5000" value="500" step="10">
-                    <span id="gravityValue">5.00</span>
+                    <input type="range" id="gravityControl" min="0" max="5000" value="250" step="10">
+                    <span id="gravityValue">2.50</span>
                 </div>
                 <div class="control-group">
                     <label for="audioVolumeControl">Audio vol.:</label>
@@ -29,6 +29,7 @@
                 </div>
             </div>
             <div style="text-align: center; margin-top: 20px;">
+                <button id="pausePlayButton" class="reset-button" style="margin-right: 10px;">⏸</button>
                 <button id="Button" class="reset-button">Play God Again</button>
             </div>
         </div>

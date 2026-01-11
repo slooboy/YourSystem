@@ -118,3 +118,6 @@ let titleUpdateInProgress = false; // Flag to prevent multiple simultaneous titl
 
 let lastUpdateTime = 0;
 let startTime = Date.now();
+
+// Pause state
+let isPaused = false;

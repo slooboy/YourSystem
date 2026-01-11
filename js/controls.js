@@ -5,6 +5,7 @@ const gravityValue = document.getElementById('gravityValue');
 const audioVolumeControl = document.getElementById('audioVolumeControl');
 const audioVolumeValue = document.getElementById('audioVolumeValue');
 const resetButton = document.getElementById('Button');
+const pausePlayButton = document.getElementById('pausePlayButton');
 
 // Klingon translations for control labels
 const klingonLabels = {
@@ -67,3 +68,25 @@ audioVolumeControl.addEventListener('input', function() {
 
 // Set up reset button
 resetButton.addEventListener('click', resetSimulation);
+
+// Set up pause/play button
+pausePlayButton.addEventListener('click', function() {
+    isPaused = !isPaused;
+    if (isPaused) {
+        pausePlayButton.textContent = '▶';
+        // Instantly pause audio by setting master gain to 0
+        if (typeof masterGainNode !== 'undefined' && masterGainNode && typeof audioContext !== 'undefined' && audioContext) {
+            masterGainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        }
+    } else {
+        pausePlayButton.textContent = '⏸';
+        // Restore audio volume
+        if (typeof updateMasterVolume === 'function') {
+            updateMasterVolume();
+        }
+        // Restart animation if we're unpausing
+        if (typeof animate === 'function') {
+            animate();
+        }
+    }
+});
